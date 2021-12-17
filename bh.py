@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Build helper for LLVM project.
 
 import os
 import sys
