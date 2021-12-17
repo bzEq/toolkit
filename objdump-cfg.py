@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Infer control flow graph via objdump's output.
 # FIXME: A more reliable way to get this task done should be implementing the dumper in llvm-objdump.
 import os
 import sys
