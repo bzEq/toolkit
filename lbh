@@ -186,7 +186,8 @@ def BootstrapMinimal(config):
                              stage1_path,
                              config.install_prefix,
                              cc=config.bootstrap_cc,
-                             projects=['clang', 'lld'])
+                             projects=['clang', 'lld'],
+                             njobs=config.njobs)
     err = stage1_builder.ConfigAndBuild()
     if err != 0:
         logging.error('Stage1 failed.')
@@ -203,7 +204,8 @@ def BootstrapMinimal(config):
                                  'lld',
                                  'clang-tools-extra',
                              ],
-                             runtimes=['compiler-rt'])
+                             runtimes=['compiler-rt'],
+                             njobs=config.njobs)
     err = stage2_builder.Config()
     if err != 0:
         logging.error('Stage2 configure failed.')
