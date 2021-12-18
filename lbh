@@ -122,7 +122,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--install_prefix', required=True)
     parser.add_argument('--src_dir', required=True)
     parser.add_argument('--build_dir', required=True)
-    parser.add_argument('-j', dest='njobs', type=int)
+    parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
 
 
 def BuildProduct(config):
