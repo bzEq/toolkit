@@ -13,14 +13,14 @@ import logging
 
 class Builder(object):
     def __init__(self,
-                 src_dir=None,
-                 build_dir=None,
-                 install_prefix=None,
+                 src_dir='',
+                 build_dir='',
+                 install_prefix='',
                  cmake=shutil.which('cmake'),
                  ninja=shutil.which('ninja'),
                  build_type='Release',
-                 cc=shutil.which('gcc'),
-                 ld=shutil.which('ld'),
+                 cc='',
+                 ld='',
                  cflags=[],
                  cxxflags=[],
                  projects=[],
@@ -63,9 +63,11 @@ class Builder(object):
             '-DLLVM_ENABLE_ASSERTIONS=On',
             '-DCMAKE_BUILD_TYPE={}'.format(self.build_type),
             '-DCMAKE_INSTALL_PREFIX={}'.format(self.install_prefix),
-            '-DCMAKE_C_COMPILER={}'.format(self.cc),
-            '-DLLVM_USE_LINKER={}'.format(self.ld),
         ]
+        if self.cc:
+            cmake_command.append('-DCMAKE_C_COMPILER={}'.format(self.cc))
+        if self.ld:
+            cmake_command.append('-DLLVM_USE_LINKER={}'.format(self.ld))
         if self.cflags:
             cmake_command.append('-DCMAKE_C_FLAGS={}'.format(
                 shlex.join(self.cflags)))
@@ -202,9 +204,20 @@ def BootstrapMinimal(config):
                                  'clang-tools-extra',
                              ],
                              runtimes=['compiler-rt'])
-    err = stage2_builder.ConfigAndBuild()
+    err = stage2_builder.Config()
     if err != 0:
-        logging.error('Stage2 failed.')
+        logging.error('Stage2 configure failed.')
+        return err
+    if not config.skip_stage2_test:
+        stage2_builder.ninja_targets = ['check-all']
+        err = stage2_builder.Build()
+        if err != 0:
+            logging.error('Stage2 test failed.')
+            return err
+    stage2_builder.ninja_targets = ['package']
+    err = stage2_builder.Build()
+    if err != 0:
+        logging.error('Stage2 package failed.')
     return err
 
 
