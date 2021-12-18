@@ -13,14 +13,14 @@ import logging
 
 class Builder(object):
     def __init__(self,
-                 src_dir='',
-                 build_dir='',
-                 install_prefix='',
+                 src_dir=None,
+                 build_dir=None,
+                 install_prefix=None,
                  cmake=shutil.which('cmake'),
                  ninja=shutil.which('ninja'),
                  build_type='Release',
-                 cc='',
-                 ld='',
+                 cc=None,
+                 ld=None,
                  cflags=[],
                  cxxflags=[],
                  projects=[],
@@ -37,8 +37,8 @@ class Builder(object):
         self.src_dir = os.path.abspath(src_dir)
         self.build_dir = os.path.abspath(build_dir)
         self.install_prefix = os.path.abspath(install_prefix)
-        self.cc = os.path.abspath(cc)
-        self.ld = os.path.abspath(ld)
+        self.cc = os.path.abspath(cc) if cc else None
+        self.ld = os.path.abspath(ld) if ld else None
         self.cflags = cflags
         self.cxxflags = cxxflags
         self.projects = projects
