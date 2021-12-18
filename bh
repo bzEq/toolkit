@@ -248,8 +248,6 @@ def main():
     dev.add_argument('--lld', default=shutil.which('ld.lld'))
     dev.add_argument('--debug', action='store_true', default=False)
     dev.add_argument('--config_only', action='store_true', default=False)
-    dev.add_argument('--skip_test', action='store_true', default=False)
-    dev.add_argument('--skip_package', action='store_true', default=False)
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.set_defaults(func=BuildForDev)
 
