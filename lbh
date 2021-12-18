@@ -27,6 +27,7 @@ class Builder(object):
                  runtimes=[],
                  extra_cmake_flags=[],
                  config_only=False,
+                 njobs=os.cpu_count(),
                  ninja_targets=[]):
         assert src_dir
         assert build_dir
@@ -46,6 +47,7 @@ class Builder(object):
         self.ninja_targets = ninja_targets
         self.build_type = build_type
         self.config_only = config_only
+        self.njobs = njobs
 
     def ConfigAndBuild(self):
         err = self.Config()
@@ -86,6 +88,7 @@ class Builder(object):
     def Build(self):
         ninja_command = [
             self.ninja,
+            '-j%d' % self.njobs,
         ]
         ninja_command.extend(self.ninja_targets)
         err = subprocess.call(ninja_command, cwd=self.build_dir)
@@ -101,6 +104,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--install_prefix', required=True)
     parser.add_argument('--src_dir', required=True)
     parser.add_argument('--build_dir', required=True)
+    parser.add_argument('-j', dest='njobs', type=int)
 
 
 def BuildProduct(config):
@@ -225,6 +229,7 @@ def BuildWithPGOAndLTO(config):
                                    'clang-tools-extra',
                                ],
                                extra_cmake_flags=lto_pass_extra_cmake_flags,
+                               njobs=config.njobs,
                                ninja_targets=['package'])
     err = lto_pass_builder.ConfigAndBuild()
     if err != 0:
