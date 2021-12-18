@@ -13,9 +13,9 @@ import logging
 
 class Builder(object):
     def __init__(self,
-                 src_dir,
-                 build_dir,
-                 install_prefix,
+                 src_dir=None,
+                 build_dir=None,
+                 install_prefix=None,
                  cmake=shutil.which('cmake'),
                  ninja=shutil.which('ninja'),
                  build_type='Release',
@@ -28,6 +28,9 @@ class Builder(object):
                  extra_cmake_flags=[],
                  config_only=False,
                  ninja_targets=[]):
+        assert src_dir
+        assert build_dir
+        assert install_prefix
         self.cmake = cmake
         self.ninja = ninja
         self.src_dir = os.path.abspath(src_dir)
@@ -46,7 +49,7 @@ class Builder(object):
 
     def ConfigAndBuild(self):
         err = self.Config()
-        if self.config_only:
+        if self.config_only or err != 0:
             return err
         return self.Build()
 
@@ -94,6 +97,7 @@ class Builder(object):
 def AddCommonArguments(parser):
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
+    parser.add_argument('--config_only', action='store_true', default=False)
     parser.add_argument('--install_prefix', required=True)
     parser.add_argument('--src_dir', required=True)
     parser.add_argument('--build_dir', required=True)
@@ -126,7 +130,7 @@ def BuildProduct(config):
                       config.install_prefix,
                       cc=config.clang,
                       ld=config.lld,
-                      config_only=options.config_only,
+                      config_only=config.config_only,
                       runtimes=[
                           'compiler-rt',
                           'libcxx',
@@ -142,7 +146,8 @@ def BuildProduct(config):
                           'mlir',
                           'polly',
                       ],
-                      extra_cmake_flags=extra_cmake_flags)
+                      extra_cmake_flags=extra_cmake_flags,
+                      ninja_targets=['package'])
     return builder.ConfigAndBuild()
 
 
@@ -193,31 +198,38 @@ def BootstrapMinimal(config):
 
 
 def BuildWithPGOAndLTO(config):
-    pass1_path = os.path.join(config.build_dir, 'pass1')
-    pass2_path = os.path.join(config.build_dir, 'pass2')
-    test_suite_path = os.path.join(config.build_dir, 'test-suite-build')
-    os.makedirs(pass1_path, exist_ok=True)
-    os.makedirs(pass2_path, exist_ok=True)
-    os.makedirs(test_suite_path, exist_ok=True)
-    # Pass1.
-    if config.skip_pass1:
-        pass1_extra_cmake_flags = []
-        pass1_builder = Builder(config.src_dir,
-                                pass1_path,
-                                config.install_prefix,
-                                projects=['clang'])
-        err = pass1_builder.ConfigAndBuild()
-        if err != 0:
-            logging.error("Pass1 failed.")
-            return err
-    # Pass2.
-    pass2_extra_cmake_flags = []
-    pass2_builder = Builder(config.src_dir,
-                            pass2_path,
-                            config.install_prefix,
-                            projects=[],
-                            runtimes=[])
-    return pass2_builder.ConfigAndBuild()
+    # TODO: Use llvm/utils/collect_and_build_with_pgo.py to profile.
+    llvm_bin_dir = os.path.join(config.llvm_path, 'bin')
+
+    def FindTool(name):
+        return shutil.which(name, path=llvm_bin_dir)
+
+    profiling_pass_path = os.path.join(config.build_dir, 'profiling-pass')
+    lto_pass_path = os.path.join(config.build_dir, 'lto-pass')
+    os.makedirs(profiling_pass_path, exist_ok=True)
+    os.makedirs(lto_pass_path, exist_ok=True)
+    # LTO pass.
+    lto_pass_extra_cmake_flags = ['-DLLVM_ENABLE_LTO=Thin']
+    lto_pass_builder = Builder(config.src_dir,
+                               lto_pass_path,
+                               config.install_prefix,
+                               cc=FindTool('clang'),
+                               ld=FindTool('ld.lld'),
+                               config_only=config.config_only,
+                               runtimes=[
+                                   'compiler-rt',
+                               ],
+                               projects=[
+                                   'clang',
+                                   'lld',
+                                   'clang-tools-extra',
+                               ],
+                               extra_cmake_flags=lto_pass_extra_cmake_flags,
+                               ninja_targets=['package'])
+    err = lto_pass_builder.ConfigAndBuild()
+    if err != 0:
+        logging.error('LTO pass failed.')
+    return err
 
 
 def main():
@@ -247,7 +259,6 @@ def main():
     dev.add_argument('--clang', default=shutil.which('clang'))
     dev.add_argument('--lld', default=shutil.which('ld.lld'))
     dev.add_argument('--debug', action='store_true', default=False)
-    dev.add_argument('--config_only', action='store_true', default=False)
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.set_defaults(func=BuildForDev)
 
@@ -271,7 +282,9 @@ def main():
     AddCommonArguments(opt)
     opt.add_argument('--llvm_path', required=True)
     opt.add_argument('--native', action='store_true', default=False)
-    opt.add_argument('--skip_pass1', action='store_true', default=False)
+    opt.add_argument('--skip_profiling_pass',
+                     action='store_true',
+                     default=False)
     opt.add_argument('--llvm_test_suite_path')
     opt.set_defaults(func=BuildWithPGOAndLTO)
 
