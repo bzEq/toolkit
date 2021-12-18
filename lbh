@@ -187,7 +187,7 @@ def BootstrapMinimal(config):
                              projects=['clang', 'lld'])
     err = stage1_builder.ConfigAndBuild()
     if err != 0:
-        logging.error("Stage1 failed")
+        logging.error('Stage1 failed.')
         return err
     if config.skip_stage2:
         return err
@@ -196,9 +196,16 @@ def BootstrapMinimal(config):
                              config.install_prefix,
                              cc=os.path.join(stage1_path, 'bin', 'clang'),
                              ld=os.path.join(stage1_path, 'bin', 'ld.lld'),
-                             projects=['clang', 'clang-tools-extra', 'extra'],
+                             projects=[
+                                 'clang',
+                                 'lld',
+                                 'clang-tools-extra',
+                             ],
                              runtimes=['compiler-rt'])
-    return stage2_builder.ConfigAndBuild()
+    err = stage2_builder.ConfigAndBuild()
+    if err != 0:
+        logging.error('Stage2 failed.')
+    return err
 
 
 def BuildWithPGOAndLTO(config):
