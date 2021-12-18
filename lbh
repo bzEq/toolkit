@@ -11,6 +11,22 @@ import shlex
 import logging
 
 
+def CPack(path):
+    cpack = shutil.which('cpack')
+    if not cpack:
+        logging.info("Can't find cpack in the system, won't pack")
+        return err
+    cpack_cmd = [
+        cpack,
+        '-G',
+        'TGZ',
+    ]
+    err = subprocess.run(cpack_cmd, cwd=path)
+    if err != 0:
+        logging.error("Can't pack with {}".format(cpack_cmd))
+    return err
+
+
 class Builder(object):
     def __init__(self,
                  src_dir=None,
@@ -216,11 +232,7 @@ def BootstrapMinimal(config):
         if err != 0:
             logging.error('Stage2 test failed.')
             return err
-    stage2_builder.ninja_targets = ['package']
-    err = stage2_builder.Build()
-    if err != 0:
-        logging.error('Stage2 package failed.')
-    return err
+    return CPack(stage2_path)
 
 
 def BuildWithPGOAndLTO(config):
@@ -251,12 +263,12 @@ def BuildWithPGOAndLTO(config):
                                    'clang-tools-extra',
                                ],
                                extra_cmake_flags=lto_pass_extra_cmake_flags,
-                               njobs=config.njobs,
-                               ninja_targets=['package'])
+                               njobs=config.njobs)
     err = lto_pass_builder.ConfigAndBuild()
     if err != 0:
         logging.error('LTO pass failed.')
-    return err
+        return err
+    return CPack(lto_pass_path)
 
 
 def main():
