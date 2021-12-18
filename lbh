@@ -206,9 +206,9 @@ def BootstrapMinimal(config):
                              ],
                              runtimes=['compiler-rt'],
                              njobs=config.njobs)
-    err = stage2_builder.Config()
+    err = stage2_builder.ConfigAndBuild()
     if err != 0:
-        logging.error('Stage2 configure failed.')
+        logging.error('Stage2 failed.')
         return err
     if not config.skip_stage2_test:
         stage2_builder.ninja_targets = ['check-all']
