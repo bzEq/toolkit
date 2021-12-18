@@ -14,17 +14,17 @@ import logging
 def CPack(path):
     cpack = shutil.which('cpack')
     if not cpack:
-        logging.info("Can't find cpack in the system, won't pack")
+        logging.info("Can't find cpack in the system, won't pack.")
         return err
     cpack_cmd = [
         cpack,
         '-G',
         'TGZ',
     ]
-    err = subprocess.run(cpack_cmd, cwd=path)
-    if err != 0:
+    cp = subprocess.run(cpack_cmd, cwd=path)
+    if cp.returncode != 0:
         logging.error("Can't pack with {}".format(cpack_cmd))
-    return err
+    return cp.returncode
 
 
 class Builder(object):
@@ -142,9 +142,9 @@ def BuildProduct(config):
         extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=YES')
         extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=YES')
         extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=YES')
-        extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
-        # FIXME: Current build fails if turning this on.
-        extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
+    # FIXUP openmp.
+    extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
+    extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
     if config.enable_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
     builder = Builder(config.src_dir,
@@ -169,8 +169,11 @@ def BuildProduct(config):
                           'polly',
                       ],
                       extra_cmake_flags=extra_cmake_flags,
-                      ninja_targets=['package'])
-    return builder.ConfigAndBuild()
+                      njobs=config.njobs)
+    err = builder.ConfigAndBuild()
+    if err != 0:
+        return err
+    return CPack(config.build_dir)
 
 
 def BuildForDev(options):
