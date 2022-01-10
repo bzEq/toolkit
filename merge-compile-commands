@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import json
+import glob
+
+root = os.path.abspath(sys.argv[1])
+dbs = glob.glob(os.path.join(root, '**/compile_commands.json'), recursive=True)
+out = []
+for db in dbs:
+    with open(db, 'r') as f:
+        doc = json.load(f)
+        out.extend(doc)
+json.dump(out, sys.stdout, indent=2)
