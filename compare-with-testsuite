@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import subprocess
+import argparse
+import shutil
+import logging
+
+
+def FindTool(base, name):
+    return shutil.which(name, path=os.path.join(base, 'bin'))
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Compare baseline/experiment drivers on test-suite')
+    parser.add_argument('--build_dir', required=True)
+    parser.add_argument('--baseline', required=True)
+    parser.add_argument('--experiment', required=True)
+    parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
+    parser.add_argument('--ts', required=True)
+    config = parser.parse_args()
+    CreateDirs(config)
+    baseline_build_dir = os.path.abspath(
+        os.path.join(config.build_dir, 'baseline'))
+    experiment_build_dir = os.path.abspath(
+        os.path.join(config.build_dir, 'experiment'))
+    return not (Build(config, os.path.abspath(
+        config.baseline), baseline_build_dir) and Build(
+            config, os.path.abspath(config.experiment), experiment_build_dir))
+
+
+def Build(config, base, build_dir):
+    cmd = [
+        config.cmake_binary,
+        '-GNinja',
+        '-DCMAKE_BUILD_TYPE=Release',
+        '-DCMAKE_C_COMPILER={clang}'.format(clang=FindTool(base, 'clang')),
+        '-DCMAKE_CXX_COMPILER={clang}'.format(clang=FindTool(base, 'clang++')),
+        '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
+        '-DTEST_SUITE_BENCHMARKING_ONLY=YES',
+        config.ts,
+    ]
+    err = subprocess.call(cmd, cwd=build_dir)
+    if err != 0:
+        logging.error('cmake failed in {}'.format(build_dir))
+        return False
+    err = subprocess.call(['ninja'], cwd=build_dir)
+    if err != 0:
+        logging.error('ninja failed in {}'.format(build_dir))
+        return False
+    return True
+
+
+def CreateDirs(config):
+    os.makedirs(os.path.join(config.build_dir, 'baseline'), exist_ok=True)
+    os.makedirs(os.path.join(config.build_dir, 'experiment'), exist_ok=True)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
