@@ -190,6 +190,8 @@ def BuildForDev(options):
                       options.install_prefix,
                       build_type=build_type,
                       cc=options.clang,
+                      cflags=['-pipe'],
+                      cxxflags=['-pipe'],
                       extra_cmake_flags=extra_cmake_flags,
                       config_only=options.config_only,
                       runtimes=['compiler-rt'],
