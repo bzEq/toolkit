@@ -151,6 +151,8 @@ def BuildProduct(config):
                       config.build_dir,
                       config.install_prefix,
                       cc=config.clang,
+                      cflags=['-pipe'],
+                      cxxflags=['-pipe'],
                       ld=config.lld,
                       config_only=config.config_only,
                       runtimes=[
