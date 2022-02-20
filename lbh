@@ -209,6 +209,8 @@ def BootstrapMinimal(config):
                              stage1_path,
                              config.install_prefix,
                              cc=config.bootstrap_cc,
+                             cflags=['-pipe'],
+                             cxxflags=['-pipe'],
                              projects=['clang', 'lld'],
                              njobs=config.njobs)
     err = stage1_builder.ConfigAndBuild()
@@ -221,6 +223,8 @@ def BootstrapMinimal(config):
                              stage2_path,
                              config.install_prefix,
                              cc=os.path.join(stage1_path, 'bin', 'clang'),
+                             cflags=['-pipe'],
+                             cxxflags=['-pipe'],
                              ld=os.path.join(stage1_path, 'bin', 'ld.lld'),
                              projects=[
                                  'clang',
