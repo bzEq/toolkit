@@ -41,7 +41,7 @@ def UseMalloc(allocator):
     if allocator == '<default>':
         return
     elif allocator == 'jemalloc':
-        ext_LD_PRELOAD.add('libjemalloc.so.2')
+        ext_LD_PRELOAD.add('libjemalloc.so')
     elif allocator == 'mimalloc':
         ext_LD_PRELOAD.add('libmimalloc.so')
     elif allocator == 'tcmalloc':
