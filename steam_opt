@@ -72,7 +72,7 @@ def main():
         description="{} -- %command% in steam's launch options".format(
             sys.argv[0]))
     parser.add_argument('--enable_mangohud',
-                        default=True,
+                        default=False,
                         help='Enable mangohud hooking')
     parser.add_argument('--enable_mangohud_dlsym',
                         default=False,
