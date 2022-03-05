@@ -71,9 +71,6 @@ def main():
     parser = argparse.ArgumentParser(
         description="{} -- %command% in steam's launch options".format(
             sys.argv[0]))
-    parser = argparse.ArgumentParser(
-        description="{} -- %command% in steam's launch options".format(
-            sys.argv[0]))
     parser.add_argument('--enable_mangohud',
                         action='store_true',
                         default=False,
