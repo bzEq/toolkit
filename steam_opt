@@ -47,7 +47,8 @@ def UseMalloc(allocator):
     elif allocator == 'tcmalloc':
         ext_LD_PRELOAD.add('libtcmalloc.so')
     else:
-        print('Unsupported allocator: {}'.format(allocator), file=sys.stderr)
+        logging.warning('Unsupported allocator: {}'.format(allocator))
+        ext_LD_PRELOAD.add(allocator)
 
 
 def RunProgram(command):
