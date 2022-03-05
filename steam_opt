@@ -68,7 +68,9 @@ def RunProgram(command):
 
 
 def main():
-    my_argv, command = SplitArgv(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+        description="{} -- %command% in steam's launch options".format(
+            sys.argv[0]))
     parser = argparse.ArgumentParser(
         description="{} -- %command% in steam's launch options".format(
             sys.argv[0]))
@@ -83,6 +85,10 @@ def main():
     parser.add_argument('--malloc',
                         default='<default>',
                         help='Memory allocator to use')
+    my_argv, command = SplitArgv(sys.argv[1:])
+    if not command:
+        parser.print_help(sys.stderr)
+        return 1
     config = parser.parse_args(my_argv)
     if config.enable_mangohud:
         EnableMangoHud()
