@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import argparse
+import shutil
+import logging
+
+
+def SplitArgv(argv):
+    i = -1
+    try:
+        i = argv.index('--')
+    except ValueError:
+        pass
+    if i == -1:
+        return argv[:], []
+    return argv[:i], argv[i + 1:]
+
+
+ext_LD_PRELOAD = set()
+ext_LD_LIBRARY_PATH = set()
+# TODO: Support customizing environment variables.
+ext_ENV = set()
+
+
+def EnableMangoHud():
+    ext_LD_LIBRARY_PATH.add('/usr/$LIB/mangohud')
+    ext_LD_PRELOAD.add('libMangoHud.so')
+    ext_ENV.add('MANGOHUD=1')
+
+
+def EnableMangoHudDlsym():
+    ext_LD_LIBRARY_PATH.add('/usr/$LIB/mangohud')
+    ext_LD_PRELOAD.add('libMangoHud_dlsym.so')
+    ext_ENV.add('MANGOHUD=1')
+
+
+def UseMalloc(allocator):
+    if allocator == '<default>':
+        return
+    elif allocator == 'jemalloc':
+        ext_LD_PRELOAD.add('libjemalloc.so.2')
+    elif allocator == 'mimalloc':
+        ext_LD_PRELOAD.add('libmimalloc.so')
+    elif allocator == 'tcmalloc':
+        ext_LD_PRELOAD.add('libtcmalloc.so')
+    else:
+        print('Unsupported allocator: {}'.format(allocator), file=sys.stderr)
+
+
+def RunProgram(command):
+    argv = ['env']
+    argv.extend(ext_ENV)
+
+    def UpdatePath(key, extra):
+        argv.append('{}={}'.format(
+            key,
+            os.environ.get(key, '') + os.path.pathsep +
+            os.path.pathsep.join(extra)))
+
+    UpdatePath('LD_LIBRARY_PATH', ext_LD_LIBRARY_PATH)
+    UpdatePath('LD_PRELOAD', ext_LD_PRELOAD)
+    argv.extend(command)
+    return os.execv(shutil.which('env'), argv)
+
+
+def main():
+    my_argv, command = SplitArgv(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+        description="{} -- %command% in steam's launch options".format(
+            sys.argv[0]))
+    parser.add_argument('--enable_mangohud',
+                        default=True,
+                        help='Enable mangohud hooking')
+    parser.add_argument('--enable_mangohud_dlsym',
+                        default=False,
+                        help='Enable mangohud dlsym hooking')
+    parser.add_argument('--malloc',
+                        default='<default>',
+                        help='Memory allocator to use')
+    config = parser.parse_args(my_argv)
+    if config.enable_mangohud:
+        EnableMangoHud()
+    if config.enable_mangohud_dlsym:
+        EnableMangoHudDlsym()
+    UseMalloc(config.malloc)
+    return RunProgram(command)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
