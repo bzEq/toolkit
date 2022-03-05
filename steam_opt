@@ -47,8 +47,7 @@ def UseMalloc(allocator):
     elif allocator == 'tcmalloc':
         ext_LD_PRELOAD.add('libtcmalloc.so')
     else:
-        logging.warning('Unsupported allocator: {}'.format(allocator))
-        ext_LD_PRELOAD.add(allocator)
+        logging.error('Unsupported allocator: {}'.format(allocator))
 
 
 def RunProgram(command):
@@ -82,6 +81,10 @@ def main():
     parser.add_argument('--malloc',
                         default='<default>',
                         help='Memory allocator to use')
+    parser.add_argument('-l',
+                        '--preload',
+                        action='append',
+                        help='Append library to LD_PRELOAD')
     my_argv, command = SplitArgv(sys.argv[1:])
     if not command:
         parser.print_help(sys.stderr)
@@ -92,6 +95,7 @@ def main():
     if config.enable_mangohud_dlsym:
         EnableMangoHudDlsym()
     UseMalloc(config.malloc)
+    ext_LD_PRELOAD.update(config.preload)
     return RunProgram(command)
 
 
