@@ -72,9 +72,11 @@ def main():
         description="{} -- %command% in steam's launch options".format(
             sys.argv[0]))
     parser.add_argument('--enable_mangohud',
+                        action='store_true',
                         default=False,
                         help='Enable mangohud hooking')
     parser.add_argument('--enable_mangohud_dlsym',
+                        action='store_true',
                         default=False,
                         help='Enable mangohud dlsym hooking')
     parser.add_argument('--malloc',
