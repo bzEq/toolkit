@@ -95,7 +95,8 @@ def main():
     if config.enable_mangohud_dlsym:
         EnableMangoHudDlsym()
     UseMalloc(config.malloc)
-    ext_LD_PRELOAD.update(config.preload)
+    if config.preload:
+        ext_LD_PRELOAD.update(config.preload)
     return RunProgram(command)
 
 
