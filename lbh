@@ -12,7 +12,7 @@ import logging
 import time
 
 
-def CPack(path):
+def CPack(path, num_threads=1):
     cpack = shutil.which('cpack')
     if not cpack:
         logging.info("Can't find cpack in the system, won't pack.")
@@ -20,7 +20,9 @@ def CPack(path):
     cpack_cmd = [
         cpack,
         '-G',
-        'TGZ',
+        'TXZ',
+        '-D',
+        'CPACK_THREADS={}'.format(num_threads),
     ]
     cp = subprocess.run(cpack_cmd, cwd=path)
     if cp.returncode != 0:
@@ -179,7 +181,7 @@ def BuildProduct(config):
     err = builder.ConfigAndBuild()
     if err != 0:
         return err
-    return CPack(config.build_dir)
+    return CPack(config.build_dir, config.njobs)
 
 
 def BuildForDev(options):
@@ -248,7 +250,7 @@ def BootstrapMinimal(config):
         if err != 0:
             logging.error('Stage2 test failed.')
             return err
-    return CPack(stage2_path)
+    return CPack(stage2_path, config.njobs)
 
 
 def BuildWithPGOAndLTO(config):
@@ -284,7 +286,7 @@ def BuildWithPGOAndLTO(config):
     if err != 0:
         logging.error('LTO pass failed.')
         return err
-    return CPack(lto_pass_path)
+    return CPack(lto_pass_path, config.njobs)
 
 
 def main():
