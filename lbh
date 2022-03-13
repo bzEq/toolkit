@@ -32,7 +32,7 @@ def CPack(path, num_threads=1):
 
 class Builder(object):
     def __init__(self,
-                 src_dir=None,
+                 monorepo=None,
                  build_dir=None,
                  install_prefix=None,
                  cmake=shutil.which('cmake'),
@@ -48,12 +48,12 @@ class Builder(object):
                  config_only=False,
                  njobs=os.cpu_count(),
                  ninja_targets=[]):
-        assert src_dir
+        assert monorepo
         assert build_dir
         assert install_prefix
         self.cmake = cmake
         self.ninja = ninja
-        self.src_dir = os.path.abspath(src_dir)
+        self.monorepo = os.path.abspath(monorepo)
         self.build_dir = os.path.abspath(build_dir)
         self.install_prefix = os.path.abspath(install_prefix)
         self.cc = os.path.abspath(cc) if cc else None
@@ -100,7 +100,7 @@ class Builder(object):
             cmake_command.append('-DLLVM_ENABLE_RUNTIMES={}'.format(';'.join(
                 self.runtimes)))
         cmake_command.extend(self.extra_cmake_flags)
-        cmake_command.append(self.src_dir)
+        cmake_command.append(os.path.join(self.monorepo, 'llvm'))
         err = subprocess.call(cmake_command, cwd=self.build_dir)
         if err != 0:
             logging.error('cmake failed: {}'.format(cmake_command))
@@ -124,7 +124,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
     parser.add_argument('--config_only', action='store_true', default=False)
     parser.add_argument('--install_prefix', required=True)
-    parser.add_argument('--src_dir', required=True)
+    parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
 
@@ -153,7 +153,7 @@ def BuildProduct(config):
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
-    builder = Builder(config.src_dir,
+    builder = Builder(config.monorepo,
                       config.build_dir,
                       config.install_prefix,
                       cc=config.clang,
@@ -191,7 +191,7 @@ def BuildForDev(options):
     extra_cmake_flags = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DBUILD_SHARED_LIBS=On')
-    builder = Builder(options.src_dir,
+    builder = Builder(options.monorepo,
                       options.build_dir,
                       options.install_prefix,
                       build_type=build_type,
@@ -212,7 +212,7 @@ def BootstrapMinimal(config):
     os.makedirs(stage1_path, exist_ok=True)
     os.makedirs(stage2_path, exist_ok=True)
     # Stage1.
-    stage1_builder = Builder(config.src_dir,
+    stage1_builder = Builder(config.monorepo,
                              stage1_path,
                              config.install_prefix,
                              cc=config.bootstrap_cc,
@@ -226,7 +226,7 @@ def BootstrapMinimal(config):
         return err
     if config.skip_stage2:
         return err
-    stage2_builder = Builder(config.src_dir,
+    stage2_builder = Builder(config.monorepo,
                              stage2_path,
                              config.install_prefix,
                              cc=os.path.join(stage1_path, 'bin', 'clang'),
@@ -266,7 +266,7 @@ def BuildWithPGOAndLTO(config):
     os.makedirs(lto_pass_path, exist_ok=True)
     # LTO pass.
     lto_pass_extra_cmake_flags = ['-DLLVM_ENABLE_LTO=Thin']
-    lto_pass_builder = Builder(config.src_dir,
+    lto_pass_builder = Builder(config.monorepo,
                                lto_pass_path,
                                config.install_prefix,
                                cc=FindTool('clang'),
