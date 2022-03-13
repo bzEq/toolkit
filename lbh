@@ -9,6 +9,7 @@ import subprocess
 import shutil
 import shlex
 import logging
+import time
 
 
 def CPack(path):
@@ -116,6 +117,7 @@ class Builder(object):
 
 
 def AddCommonArguments(parser):
+    parser.add_argument('--enable_timer', default=False, action='store_true')
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
     parser.add_argument('--config_only', action='store_true', default=False)
@@ -137,14 +139,16 @@ def BuildProduct(config):
     if config.llvm_toolchain:
         # All in llvm's toolchain.
         extra_cmake_flags.append('-DCLANG_DEFAULT_LINKER=lld')
-        extra_cmake_flags.append('-DCLANG_DEFAULT_CXX_STDLIB=libc++')
         extra_cmake_flags.append('-DCLANG_DEFAULT_RTLIB=compiler-rt')
+        extra_cmake_flags.append('-DCLANG_DEFAULT_UNWINDLIB=libunwind')
+        extra_cmake_flags.append('-DCLANG_DEFAULT_CXX_STDLIB=libc++')
         extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=YES')
         extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=YES')
         extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=YES')
     # FIXUP openmp.
     extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
     extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
+    # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
     builder = Builder(config.src_dir,
@@ -286,7 +290,7 @@ def BuildWithPGOAndLTO(config):
 def main():
     parser = argparse.ArgumentParser(
         description='Build Clang/LLVM under different mode.')
-    subparsers = parser.add_subparsers(required=True, dest='cmd')
+    subparsers = parser.add_subparsers(required=True, dest='<subcmd>')
 
     # Bootstrap build.
     bootstrap_minimal = subparsers.add_parser(
@@ -340,8 +344,12 @@ def main():
     opt.set_defaults(func=BuildWithPGOAndLTO)
 
     args = parser.parse_args()
+    start = time.perf_counter()
     if args.func:
         return args.func(args)
+    end = time.perf_counter()
+    if args.enable_timer:
+        print('Time elapsed: {}'.format(end - start))
 
 
 if __name__ == '__main__':
