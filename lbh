@@ -68,13 +68,7 @@ class Builder(object):
         self.config_only = config_only
         self.njobs = njobs
 
-    def ConfigAndBuild(self):
-        err = self.Config()
-        if self.config_only or err != 0:
-            return err
-        return self.Build()
-
-    def Config(self):
+    def BuildCMakeCommand(self):
         cmake_command = [
             self.cmake,
             '-GNinja',
@@ -100,11 +94,39 @@ class Builder(object):
             cmake_command.append('-DLLVM_ENABLE_RUNTIMES={}'.format(';'.join(
                 self.runtimes)))
         cmake_command.extend(self.extra_cmake_flags)
-        cmake_command.append(os.path.join(self.monorepo, 'llvm'))
-        err = subprocess.call(cmake_command, cwd=self.build_dir)
+        return cmake_command
+
+    # Implicitly reset runtimes.
+    def ConfigAndBuildProjects(self):
+        self.runtimes = []
+        return self.ConfigAndBuild()
+
+    # Implicitly reset projects.
+    def ConfigAndBuildRuntimes(self):
+        self.projects = []
+        err = self.config(os.path.join(self.monorepo, 'runtimes'),
+                          self.build_dir)
+        if err != 0:
+            return err
+        return self.Build()
+
+    def config(self, src_dir, build_dir):
+        cmake_command = self.BuildCMakeCommand()
+        cmake_command.extend(['-S', src_dir])
+        cmake_command.extend(['-B', build_dir])
+        err = subprocess.call(cmake_command)
         if err != 0:
             logging.error('cmake failed: {}'.format(cmake_command))
         return err
+
+    def ConfigAndBuild(self):
+        err = self.Config()
+        if self.config_only or err != 0:
+            return err
+        return self.Build()
+
+    def Config(self):
+        return self.config(os.path.join(self.monorepo, 'llvm'), self.build_dir)
 
     def Build(self):
         ninja_command = [
@@ -161,24 +183,26 @@ def BuildProduct(config):
                       cxxflags=['-pipe'],
                       ld=config.lld,
                       config_only=config.config_only,
-                      runtimes=[
-                          'compiler-rt',
-                          'libcxx',
-                          'libcxxabi',
-                          'libunwind',
-                          'openmp',
-                      ],
-                      projects=[
-                          'clang',
-                          'clang-tools-extra',
-                          'lld',
-                          'lldb',
-                          'mlir',
-                          'polly',
-                      ],
                       extra_cmake_flags=extra_cmake_flags,
                       njobs=config.njobs)
-    err = builder.ConfigAndBuild()
+    builder.runtimes = []
+    builder.projects = [
+        'clang',
+        'clang-tools-extra',
+        'lld',
+        'lldb',
+        'mlir',
+        'polly',
+        'compiler-rt',
+        'libcxx',
+        'libcxxabi',
+        'libunwind',
+        'openmp',
+    ]
+    err = builder.Config()
+    if err != 0:
+        return err
+    err = builder.Build()
     if err != 0:
         return err
     return CPack(config.build_dir, config.njobs)
