@@ -249,7 +249,7 @@ def BootstrapMinimal(config):
         logging.error('Stage1 failed.')
         return err
     if config.skip_stage2:
-        return err
+        return CPack(stage1_path, config.njobs)
     stage2_builder = Builder(config.monorepo,
                              stage2_path,
                              config.install_prefix,
