@@ -371,11 +371,13 @@ def main():
 
     args = parser.parse_args()
     start = time.perf_counter()
+    err = -1
     if args.func:
-        return args.func(args)
+        err = args.func(args)
     end = time.perf_counter()
     if args.enable_timer:
         print('Time elapsed: {}'.format(end - start))
+    return err
 
 
 if __name__ == '__main__':
