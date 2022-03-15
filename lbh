@@ -316,7 +316,7 @@ def BuildWithPGOAndLTO(config):
 def main():
     parser = argparse.ArgumentParser(
         description='Build Clang/LLVM under different mode.')
-    subparsers = parser.add_subparsers(required=True, dest='<subcmd>')
+    subparsers = parser.add_subparsers(dest='subcmd')
 
     # Bootstrap build.
     bootstrap_minimal = subparsers.add_parser(
@@ -369,13 +369,14 @@ def main():
     opt.add_argument('--llvm_test_suite_path')
     opt.set_defaults(func=BuildWithPGOAndLTO)
 
-    args = parser.parse_args()
+    config = parser.parse_args()
+    if not config.subcmd:
+        parser.print_help()
+        return -1
     start = time.perf_counter()
-    err = -1
-    if args.func:
-        err = args.func(args)
+    err = config.func(config)
     end = time.perf_counter()
-    if args.enable_timer:
+    if config.enable_timer:
         print('Time elapsed: {}'.format(end - start))
     return err
 
