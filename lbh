@@ -214,7 +214,7 @@ def BuildForDev(options):
         build_type = 'Debug'
     extra_cmake_flags = []
     if options.build_shared_libs:
-        extra_cmake_flags.append('-DBUILD_SHARED_LIBS=On')
+        extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=On')
     builder = Builder(options.monorepo,
                       options.build_dir,
                       options.install_prefix,
@@ -225,8 +225,13 @@ def BuildForDev(options):
                       cxxflags=['-pipe'],
                       extra_cmake_flags=extra_cmake_flags,
                       config_only=options.config_only,
-                      runtimes=['compiler-rt'],
-                      projects=['clang', 'lld'])
+                      projects=[
+                          'clang',
+                          'compiler-rt',
+                          'libcxx',
+                          'libcxxabi',
+                          'lld',
+                      ])
     return builder.ConfigAndBuild()
 
 
