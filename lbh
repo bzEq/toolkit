@@ -228,8 +228,6 @@ def BuildForDev(options):
                       projects=[
                           'clang',
                           'compiler-rt',
-                          'libcxx',
-                          'libcxxabi',
                           'lld',
                       ])
     return builder.ConfigAndBuild()
