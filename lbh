@@ -211,7 +211,7 @@ def BuildProduct(config):
 def BuildForDev(options):
     build_type = 'Release'
     if options.debug:
-        build_type = 'Debug'
+        build_type = 'RelWithDebInfo'
     extra_cmake_flags = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=On')
