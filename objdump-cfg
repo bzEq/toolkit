@@ -164,7 +164,9 @@ class BranchAnalyzer(object):
             t = self.function.instructions[i]
             inst = t[1]
             m = INSTRUCTION.match(inst)
-            assert (m)
+            if not m:
+                # Like <unknown>. What matters is branch instruction.
+                continue
             mg = m.groups()
             assert (len(mg) >= 1)
             inst_main = mg[0]
