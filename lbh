@@ -186,7 +186,7 @@ def BuildProduct(config):
                       extra_cmake_flags=extra_cmake_flags,
                       njobs=config.njobs)
     builder.runtimes = []
-    if config.miminal:
+    if config.minimal:
         builder.projects = [
             'clang',
             'clang-tools-extra',
