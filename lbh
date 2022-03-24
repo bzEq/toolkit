@@ -365,7 +365,7 @@ def main():
     prod.add_argument('--clang', default=shutil.which('clang'))
     prod.add_argument('--lld', default=shutil.which('ld.lld'))
     prod.add_argument('--llvm_toolchain', action='store_true', default=False)
-    prod.add_argument('--minimal', action='store_true', default=True)
+    prod.add_argument('--minimal', action='store_true', default=False)
     prod.add_argument('--use_newpm', action='store_true', default=False)
     prod.add_argument('--enable_atomic', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
