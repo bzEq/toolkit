@@ -186,19 +186,27 @@ def BuildProduct(config):
                       extra_cmake_flags=extra_cmake_flags,
                       njobs=config.njobs)
     builder.runtimes = []
-    builder.projects = [
-        'clang',
-        'clang-tools-extra',
-        'lld',
-        'lldb',
-        'mlir',
-        'polly',
-        'compiler-rt',
-        'libcxx',
-        'libcxxabi',
-        'libunwind',
-        'openmp',
-    ]
+    if config.miminal:
+        builder.projects = [
+            'clang',
+            'clang-tools-extra',
+            'lld',
+            'compiler-rt',
+        ]
+    else:
+        builder.projects = [
+            'clang',
+            'clang-tools-extra',
+            'lld',
+            'lldb',
+            'mlir',
+            'polly',
+            'compiler-rt',
+            'libcxx',
+            'libcxxabi',
+            'libunwind',
+            'openmp',
+        ]
     err = builder.Config()
     if err != 0:
         return err
@@ -354,6 +362,7 @@ def main():
     prod.add_argument('--clang', default=shutil.which('clang'))
     prod.add_argument('--lld', default=shutil.which('ld.lld'))
     prod.add_argument('--llvm_toolchain', action='store_true', default=False)
+    prod.add_argument('--minimal', action='store_true', default=True)
     prod.add_argument('--use_newpm', action='store_true', default=False)
     prod.add_argument('--enable_atomic', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
