@@ -252,6 +252,7 @@ def BootstrapMinimal(config):
                              stage1_path,
                              config.install_prefix,
                              cc=config.bootstrap_cc,
+                             ld=config.bootstrap_ld,
                              cflags=['-pipe'],
                              cxxflags=['-pipe'],
                              projects=['clang', 'lld'],
@@ -337,6 +338,8 @@ def main():
     AddCommonArguments(bootstrap_minimal)
     bootstrap_minimal.add_argument('--bootstrap_cc',
                                    default=shutil.which('gcc'))
+    bootstrap_minimal.add_argument('--bootstrap_ld',
+                                   default=shutil.which('ld'))
     bootstrap_minimal.add_argument('--skip_stage2',
                                    default=False,
                                    action='store_true')
