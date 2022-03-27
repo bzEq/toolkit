@@ -162,13 +162,16 @@ def BuildProduct(config):
         extra_cmake_flags.append('-DLLVM_USE_NEWPM=On')
     if config.llvm_toolchain:
         # All in llvm's toolchain.
+        extra_cmake_flags.append('-DCLANG_DEFAULT_PIE_ON_LINUX=ON')
         extra_cmake_flags.append('-DCLANG_DEFAULT_LINKER=lld')
         extra_cmake_flags.append('-DCLANG_DEFAULT_RTLIB=compiler-rt')
         extra_cmake_flags.append('-DCLANG_DEFAULT_UNWINDLIB=libunwind')
         extra_cmake_flags.append('-DCLANG_DEFAULT_CXX_STDLIB=libc++')
-        extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=YES')
-        extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=YES')
-        extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=YES')
+        extra_cmake_flags.append('-DCLANG_DEFAULT_OBJCOPY=llvm-objcopy')
+        extra_cmake_flags.append('-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp')
+        extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=ON')
+        extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=ON')
+        extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=ON')
     # FIXUP openmp.
     extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
     extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
