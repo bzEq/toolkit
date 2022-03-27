@@ -171,6 +171,7 @@ def BuildProduct(config):
         extra_cmake_flags.append('-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp')
         extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=ON')
         extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=ON')
+        extra_cmake_flags.append('-DLIBUNWIND_USE_COMPILER_RT=ON')
         extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=ON')
     # FIXUP openmp.
     extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
