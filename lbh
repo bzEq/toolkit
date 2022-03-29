@@ -179,6 +179,13 @@ def BuildProduct(config):
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
+    if config.lto:
+        extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+    cflags = ['-pipe']
+    cxxflags = cflags['-pipe']
+    if config.native:
+        cflags.append('-march=native')
+        cxxflags.append('-march=native')
     builder = Builder(config.monorepo,
                       config.build_dir,
                       config.install_prefix,
@@ -372,6 +379,8 @@ def main():
     prod.add_argument('--minimal', action='store_true', default=False)
     prod.add_argument('--use_newpm', action='store_true', default=False)
     prod.add_argument('--enable_atomic', action='store_true', default=False)
+    prod.add_argument('--lto', action='store_true', default=False)
+    prod.add_argument('--native', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
     prod.add_argument('--binutils_include')
     AddCommonArguments(prod)
