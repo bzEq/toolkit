@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+LLVM_DEV=${LLVM_DEV:-"${HOME}/llvm-dev"}
+
+cd ${LLVM_DEV}/llvm-project && git checkout main && \
+    git pull && \
+    cd ${LLVM_DEV}/build/default && \
+    ninja && ninja check-all && \
+    rm -rf ${LLVM_DEV}/build/bootstrap/* && \
+    cd ${LLVM_DEV}/build/bootstrap && \
+    lbh dev --install_prefix /opt/clang-nightly \
+                            --monorepo ${LLVM_DEV}/llvm-project \
+                            --build_dir $PWD \
+                            --clang ../default/bin/clang \
+                            --lld ../default/bin/ld.lld --config_only && \
+    ninja clean && ninja && \
+    ninja check-all && \
+    cpack -G TXZ -D CPACK_THREADS=$(nproc)

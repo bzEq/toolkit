@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+export https_proxy="socks5://localhost:1080"
+
+LLVM_DEV=${LLVM_DEV:-"${HOME}/llvm-dev"}
+
+cd ${LLVM_DEV}/llvm-project.git && git fetch origin main:main -j$(nproc)
+
+cd ${LLVM_DEV}/llvm-test-suite.git && \
+    git fetch origin main:main -j$(nproc)
