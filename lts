@@ -5,16 +5,18 @@ import os
 import sys
 import argparse
 import shutil
+import subprocess
+import logging
 
 
 class Builder(object):
     def __init__(self, config):
         self.config = config
 
-    def FindTool(self):
+    def FindTool(self, name):
         return os.path.abspath(
-            shutil.which('clang',
-                         path=os.path.join(self.config.llvm_bin_dir, 'bin')))
+            shutil.which(name,
+                         path=os.path.join(self.config.llvm_build_dir, 'bin')))
 
     def ConfigAndBuild(self):
         err = self.Config()
@@ -25,12 +27,14 @@ class Builder(object):
     def Config(self):
         cmd = [
             self.config.cmake_binary,
+            '-GNinja',
             '-DCMAKE_BUILD_TYPE=Release',
             '-DCMAKE_C_COMPILER={}'.format(self.FindTool('clang')),
             '-DCMAKE_CXX_COMPILER={}'.format(self.FindTool('clang++')),
-            '-C',
-            os.path.abspath(self.config.build_dir),
+            '-S',
             os.path.abspath(self.config.src_dir),
+            '-B',
+            os.path.abspath(self.config.build_dir),
         ]
         err = subprocess.call(cmd)
         if err != 0:
