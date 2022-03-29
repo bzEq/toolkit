@@ -31,6 +31,10 @@ class Builder(object):
             '-DCMAKE_BUILD_TYPE=Release',
             '-DCMAKE_C_COMPILER={}'.format(self.FindTool('clang')),
             '-DCMAKE_CXX_COMPILER={}'.format(self.FindTool('clang++')),
+            '-DCMAKE_C_FLAGS=-pipe --ld-path={}'.format(
+                self.FindTool('ld.lld')),
+            '-DCMAKE_CXX_FLAGS=-pipe --ld-path={}'.format(
+                self.FindTool('ld.lld')),
             '-S',
             os.path.abspath(self.config.src_dir),
             '-B',
