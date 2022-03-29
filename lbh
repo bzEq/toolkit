@@ -177,7 +177,7 @@ def BuildProduct(config):
     extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
     extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
     # Use at risk, since atomic in compiler-rt will be statically linked against.
-    if config.enable_atomic:
+    if config.enable_rt_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
     if config.lto:
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
@@ -378,7 +378,7 @@ def main():
     prod.add_argument('--llvm_toolchain', action='store_true', default=False)
     prod.add_argument('--minimal', action='store_true', default=False)
     prod.add_argument('--use_newpm', action='store_true', default=False)
-    prod.add_argument('--enable_atomic', action='store_true', default=False)
+    prod.add_argument('--enable_rt_atomic', action='store_true', default=False)
     prod.add_argument('--lto', action='store_true', default=False)
     prod.add_argument('--native', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
