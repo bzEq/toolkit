@@ -182,7 +182,7 @@ def BuildProduct(config):
     if config.lto:
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     cflags = ['-pipe']
-    cxxflags = cflags['-pipe']
+    cxxflags = ['-pipe']
     if config.native:
         cflags.append('-march=native')
         cxxflags.append('-march=native')
