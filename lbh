@@ -174,8 +174,9 @@ def BuildProduct(config):
         extra_cmake_flags.append('-DLIBUNWIND_USE_COMPILER_RT=ON')
         extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=ON')
     # FIXUP openmp.
-    extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
-    extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
+    # extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
+    # extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
+
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_rt_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
