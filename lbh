@@ -39,6 +39,7 @@ class Builder(object):
                  ninja=shutil.which('ninja'),
                  build_type='Release',
                  cc=None,
+                 cxx=None,
                  ld=None,
                  cflags=[],
                  cxxflags=[],
@@ -57,6 +58,7 @@ class Builder(object):
         self.build_dir = os.path.abspath(build_dir)
         self.install_prefix = os.path.abspath(install_prefix)
         self.cc = os.path.abspath(cc) if cc else None
+        self.cc = os.path.abspath(cxx) if cc else None
         self.ld = os.path.abspath(ld) if ld else None
         self.cflags = cflags
         self.cxxflags = cxxflags
@@ -79,6 +81,8 @@ class Builder(object):
         ]
         if self.cc:
             cmake_command.append('-DCMAKE_C_COMPILER={}'.format(self.cc))
+        if self.cxx:
+            cmake_command.append('-DCMAKE_CXX_COMPILER={}'.format(self.cxx))
         if self.ld:
             cmake_command.append('-DLLVM_USE_LINKER={}'.format(self.ld))
         if self.cflags:
@@ -241,6 +245,7 @@ def BuildForDev(options):
                       options.install_prefix,
                       build_type=build_type,
                       cc=options.clang,
+                      cxx=options.clang,
                       ld=options.lld,
                       cflags=['-pipe'],
                       cxxflags=['-pipe'],
