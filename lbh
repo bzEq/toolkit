@@ -245,7 +245,7 @@ def BuildForDev(options):
                       options.install_prefix,
                       build_type=build_type,
                       cc=options.clang,
-                      cxx=options.clang,
+                      cxx=options.clang + '++',
                       ld=options.lld,
                       cflags=['-pipe'],
                       cxxflags=['-pipe'],
