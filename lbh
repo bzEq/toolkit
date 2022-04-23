@@ -10,6 +10,7 @@ import shutil
 import shlex
 import logging
 import time
+import copy
 
 
 def CPack(path, num_threads=1):
@@ -145,7 +146,6 @@ class Builder(object):
 
 
 def AddCommonArguments(parser):
-    parser.add_argument('--enable_timer', default=False, action='store_true')
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
     parser.add_argument('--config_only', action='store_true', default=False)
@@ -343,10 +343,32 @@ def BuildWithPGOAndLTO(config):
     return CPack(lto_pass_path, config.njobs)
 
 
+def UpdateRepo(config):
+    env = copy.deepcopy(os.environ)
+    if not config.disable_proxy:
+        env['https_proxy'] = 'socks5://localhost:1080'
+        # Requires openbsd-netcat.
+        env['GIT_SSH_COMMAND'] = 'ssh -o ProxyCommand="nc -v -x 127.0.0.1:1080 %h %p"'
+    url = 'git@github.com:llvm/llvm-project.git'
+    if config.use_https:
+        url = 'https://github.com/llvm/llvm-project.git'
+    if config.init:
+        cmd = ['git', 'clone', url]
+        return subprocess.call(cmd, env=env)
+    return subprocess.call(['git', 'pull'])
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Build Clang/LLVM under different mode.')
     subparsers = parser.add_subparsers(dest='subcmd')
+    # Update llvm monorepo.
+    repo = subparsers.add_parser('repo',
+                                 description='Init and update llvm repo')
+    repo.add_argument('--use_https', default=False, action='store_true')
+    repo.add_argument('--init', default=False, action='store_true')
+    repo.add_argument('--disable_proxy', default=False, action='store_true')
+    repo.set_defaults(func=UpdateRepo)
 
     # Bootstrap build.
     bootstrap_minimal = subparsers.add_parser(
@@ -411,8 +433,6 @@ def main():
     start = time.perf_counter()
     err = config.func(config)
     end = time.perf_counter()
-    if config.enable_timer:
-        print('Time elapsed: {}'.format(end - start))
     return err
 
 
