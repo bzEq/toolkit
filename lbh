@@ -347,7 +347,8 @@ def UpdateRepo(config):
     env = copy.deepcopy(os.environ)
     if not config.disable_proxy:
         env['https_proxy'] = 'socks5://localhost:1080'
-        # Requires openbsd-netcat.
+        # Requires net-analyzer/openbsd-netcat on Gentoo,
+        # netcat-openbsd on Debian.
         env['GIT_SSH_COMMAND'] = 'ssh -o ProxyCommand="nc -v -x 127.0.0.1:1080 %h %p"'
     url = 'git@github.com:llvm/llvm-project.git'
     if config.use_https:
