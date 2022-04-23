@@ -4,7 +4,7 @@ set -e
 LLVM_DEV=${LLVM_DEV:-"${HOME}/llvm-dev"}
 
 cd ${LLVM_DEV}/llvm-project && git checkout main && \
-    git pull && \
+    lbh repo && \
     cd ${LLVM_DEV}/build/default && \
     ninja && ninja check-all && \
     rm -rf ${LLVM_DEV}/build/bootstrap/* && \
