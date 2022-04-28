@@ -195,6 +195,7 @@ def BuildProduct(config):
                       config.build_dir,
                       config.install_prefix,
                       cc=config.clang,
+                      cxx=config.clang + '++',
                       cflags=cflags,
                       cxxflags=cxxflags,
                       ld=config.lld,
