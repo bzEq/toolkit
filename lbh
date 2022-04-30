@@ -357,7 +357,11 @@ def UpdateRepo(config):
     if config.init:
         cmd = ['git', 'clone', url]
         return subprocess.call(cmd, env=env)
-    return subprocess.call(['git', 'pull'])
+    return subprocess.call([
+        'git',
+        'pull',
+        '--recurse-submodules',
+    ])
 
 
 def main():
