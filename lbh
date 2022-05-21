@@ -256,6 +256,7 @@ def BuildForDev(options):
                           'clang',
                           'compiler-rt',
                           'lld',
+                          'clang-tools-extra',
                       ])
     return builder.ConfigAndBuild()
 
