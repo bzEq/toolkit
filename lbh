@@ -32,24 +32,28 @@ def CPack(path, num_threads=1):
 
 
 class Builder(object):
-    def __init__(self,
-                 monorepo=None,
-                 build_dir=None,
-                 install_prefix=None,
-                 cmake=shutil.which('cmake'),
-                 ninja=shutil.which('ninja'),
-                 build_type='Release',
-                 cc=None,
-                 cxx=None,
-                 ld=None,
-                 cflags=[],
-                 cxxflags=[],
-                 projects=[],
-                 runtimes=[],
-                 extra_cmake_flags=[],
-                 config_only=False,
-                 njobs=os.cpu_count(),
-                 ninja_targets=[]):
+
+    def __init__(
+            self,
+            monorepo=None,
+            build_dir=None,
+            install_prefix=None,
+            cmake=shutil.which('cmake'),
+            ninja=shutil.which('ninja'),
+            build_type='Release',
+            cc=None,
+            cxx=None,
+            ld=None,
+            cflags=[],
+            cxxflags=[],
+            projects=[],
+            runtimes=[],
+            extra_cmake_flags=[],
+            config_only=False,
+            njobs=os.cpu_count(),
+            ninja_targets=[],
+            use_tcmalloc=False,
+    ):
         assert monorepo
         assert build_dir
         assert install_prefix
@@ -70,6 +74,7 @@ class Builder(object):
         self.build_type = build_type
         self.config_only = config_only
         self.njobs = njobs
+        self.use_tcmalloc = use_tcmalloc
 
     def BuildCMakeCommand(self):
         cmake_command = [
@@ -80,6 +85,9 @@ class Builder(object):
             '-DCMAKE_BUILD_TYPE={}'.format(self.build_type),
             '-DCMAKE_INSTALL_PREFIX={}'.format(self.install_prefix),
         ]
+        if self.use_tcmalloc:
+            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS=-ltcmalloc')
+            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS=-ltcmalloc')
         if self.cc:
             cmake_command.append('-DCMAKE_C_COMPILER={}'.format(self.cc))
         if self.cxx:
@@ -153,6 +161,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
+    parser.add_argument('--use_tcmalloc', action='store_true', default=False)
 
 
 def BuildProduct(config):
@@ -191,17 +200,20 @@ def BuildProduct(config):
     if config.native:
         cflags.append('-march=native')
         cxxflags.append('-march=native')
-    builder = Builder(config.monorepo,
-                      config.build_dir,
-                      config.install_prefix,
-                      cc=config.clang,
-                      cxx=config.clang + '++',
-                      cflags=cflags,
-                      cxxflags=cxxflags,
-                      ld=config.lld,
-                      config_only=config.config_only,
-                      extra_cmake_flags=extra_cmake_flags,
-                      njobs=config.njobs)
+    builder = Builder(
+        config.monorepo,
+        config.build_dir,
+        config.install_prefix,
+        cc=config.clang,
+        cxx=config.clang + '++',
+        cflags=cflags,
+        cxxflags=cxxflags,
+        ld=config.lld,
+        config_only=config.config_only,
+        extra_cmake_flags=extra_cmake_flags,
+        njobs=config.njobs,
+        use_tcmalloc=config.use_tcmalloc,
+    )
     builder.runtimes = []
     if config.minimal:
         builder.projects = [
