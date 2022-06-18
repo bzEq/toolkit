@@ -52,7 +52,7 @@ class Builder(object):
             config_only=False,
             njobs=os.cpu_count(),
             ninja_targets=[],
-            use_tcmalloc=False,
+            use_mimalloc=False,
     ):
         assert monorepo
         assert build_dir
@@ -74,7 +74,7 @@ class Builder(object):
         self.build_type = build_type
         self.config_only = config_only
         self.njobs = njobs
-        self.use_tcmalloc = use_tcmalloc
+        self.use_mimalloc = use_mimalloc
 
     def BuildCMakeCommand(self):
         cmake_command = [
@@ -85,9 +85,9 @@ class Builder(object):
             '-DCMAKE_BUILD_TYPE={}'.format(self.build_type),
             '-DCMAKE_INSTALL_PREFIX={}'.format(self.install_prefix),
         ]
-        if self.use_tcmalloc:
-            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS=-ltcmalloc')
-            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS=-ltcmalloc')
+        if self.use_mimalloc:
+            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS=-lmimalloc')
+            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS=-lmimalloc')
         if self.cc:
             cmake_command.append('-DCMAKE_C_COMPILER={}'.format(self.cc))
         if self.cxx:
@@ -161,7 +161,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
-    parser.add_argument('--use_tcmalloc', action='store_true', default=False)
+    parser.add_argument('--use_mimalloc', action='store_true', default=False)
 
 
 def BuildProduct(config):
@@ -212,7 +212,7 @@ def BuildProduct(config):
         config_only=config.config_only,
         extra_cmake_flags=extra_cmake_flags,
         njobs=config.njobs,
-        use_tcmalloc=config.use_tcmalloc,
+        use_mimalloc=config.use_mimalloc,
     )
     builder.runtimes = []
     if config.minimal:
