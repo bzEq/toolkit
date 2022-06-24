@@ -27,7 +27,6 @@ ext_ENV = set()
 
 def EnableProtonFSR():
     ext_ENV.add('WINE_FULLSCREEN_FSR=1')
-    ext_ENV.add('WINE_FULLSCREEN_FSR_STRENGTH=0')
 
 
 def EnableMangoHud():
