@@ -25,6 +25,11 @@ ext_LD_LIBRARY_PATH = set()
 ext_ENV = set()
 
 
+def EnableProtonFSR():
+    ext_ENV.add('WINE_FULLSCREEN_FSR=1')
+    ext_ENV.add('WINE_FULLSCREEN_FSR_STRENGTH=0')
+
+
 def EnableMangoHud():
     ext_LD_LIBRARY_PATH.add('/usr/$LIB/mangohud')
     ext_LD_PRELOAD.add('libMangoHud.so')
@@ -85,6 +90,10 @@ def main():
                         '--preload',
                         action='append',
                         help='Append library to LD_PRELOAD')
+    parser.add_argument('--enable_fsr',
+                        action='store_true',
+                        default=False,
+                        help='Try to enable FSR support in proton')
     my_argv, command = SplitArgv(sys.argv[1:])
     if not command:
         parser.print_help(sys.stderr)
@@ -94,6 +103,8 @@ def main():
         EnableMangoHud()
     if config.enable_mangohud_dlsym:
         EnableMangoHudDlsym()
+    if config.enable_fsr:
+        EnableProtonFSR()
     UseMalloc(config.malloc)
     if config.preload:
         ext_LD_PRELOAD.update(config.preload)
