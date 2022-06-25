@@ -84,7 +84,7 @@ class Builder(object):
             '-GNinja',
             '-DCMAKE_MAKE_PROGRAM={}'.format(self.ninja),
             '-DLLVM_ENABLE_ASSERTIONS={}'.format(
-                'ON' if self.enable_asserts else 'OFF'),
+                'TRUE' if self.enable_asserts else 'FALSE'),
             '-DCMAKE_BUILD_TYPE={}'.format(self.build_type),
             '-DCMAKE_INSTALL_PREFIX={}'.format(self.install_prefix),
         ]
@@ -170,32 +170,32 @@ def AddCommonArguments(parser):
 def BuildProduct(config):
     extra_cmake_flags = []
     if config.dylib:
-        extra_cmake_flags.append('-DLLVM_LINK_LLVM_DYLIB=ON')
+        extra_cmake_flags.append('-DLLVM_LINK_LLVM_DYLIB=TRUE')
     if config.binutils_include:
         extra_cmake_flags.append('-DLLVM_BINUTILS_INCDIR={path}'.format(
             path=config.binutils_include))
     if config.use_newpm:
-        extra_cmake_flags.append('-DLLVM_USE_NEWPM=On')
+        extra_cmake_flags.append('-DLLVM_USE_NEWPM=TRUE')
     if config.llvm_toolchain:
         # All in llvm's toolchain.
-        extra_cmake_flags.append('-DCLANG_DEFAULT_PIE_ON_LINUX=ON')
+        extra_cmake_flags.append('-DCLANG_DEFAULT_PIE_ON_LINUX=TRUE')
         extra_cmake_flags.append('-DCLANG_DEFAULT_LINKER=lld')
         extra_cmake_flags.append('-DCLANG_DEFAULT_RTLIB=compiler-rt')
         extra_cmake_flags.append('-DCLANG_DEFAULT_UNWINDLIB=libunwind')
         extra_cmake_flags.append('-DCLANG_DEFAULT_CXX_STDLIB=libc++')
         extra_cmake_flags.append('-DCLANG_DEFAULT_OBJCOPY=llvm-objcopy')
         extra_cmake_flags.append('-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp')
-        extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=ON')
-        extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=ON')
-        extra_cmake_flags.append('-DLIBUNWIND_USE_COMPILER_RT=ON')
-        extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=ON')
+        extra_cmake_flags.append('-DLIBCXX_USE_COMPILER_RT=TRUE')
+        extra_cmake_flags.append('-DLIBCXXABI_USE_COMPILER_RT=TRUE')
+        extra_cmake_flags.append('-DLIBUNWIND_USE_COMPILER_RT=TRUE')
+        extra_cmake_flags.append('-DLIBCXXABI_USE_LLVM_UNWINDER=TRUE')
     # FIXUP openmp.
     # extra_cmake_flags.append('-DLIBOMP_LIBFLAGS=-lm')
-    # extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=OFF')
+    # extra_cmake_flags.append('-DOPENMP_ENABLE_LIBOMPTARGET=FALSE')
 
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_rt_atomic:
-        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=NO')
+        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=TRUE')
     if config.lto:
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     cflags = ['-pipe']
@@ -258,7 +258,7 @@ def BuildForDev(options):
         build_type = 'RelWithDebInfo'
     extra_cmake_flags = []
     if options.build_shared_libs:
-        extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=On')
+        extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
     extra_cmake_flags.append('-DLLVM_PARALLEL_LINK_JOBS=3')
     builder = Builder(options.monorepo,
                       options.build_dir,
