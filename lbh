@@ -34,25 +34,26 @@ def CPack(path, num_threads=1):
 class Builder(object):
 
     def __init__(
-            self,
-            monorepo=None,
-            build_dir=None,
-            install_prefix=None,
-            cmake=shutil.which('cmake'),
-            ninja=shutil.which('ninja'),
-            build_type='Release',
-            cc=None,
-            cxx=None,
-            ld=None,
-            cflags=[],
-            cxxflags=[],
-            projects=[],
-            runtimes=[],
-            extra_cmake_flags=[],
-            config_only=False,
-            njobs=os.cpu_count(),
-            ninja_targets=[],
-            use_mimalloc=False,
+        self,
+        monorepo=None,
+        build_dir=None,
+        install_prefix=None,
+        cmake=shutil.which('cmake'),
+        ninja=shutil.which('ninja'),
+        build_type='Release',
+        cc=None,
+        cxx=None,
+        ld=None,
+        cflags=[],
+        cxxflags=[],
+        projects=[],
+        runtimes=[],
+        extra_cmake_flags=[],
+        config_only=False,
+        njobs=os.cpu_count(),
+        ninja_targets=[],
+        use_mimalloc=False,
+        enable_asserts=True,
     ):
         assert monorepo
         assert build_dir
@@ -75,13 +76,15 @@ class Builder(object):
         self.config_only = config_only
         self.njobs = njobs
         self.use_mimalloc = use_mimalloc
+        self.enable_asserts = enable_asserts
 
     def BuildCMakeCommand(self):
         cmake_command = [
             self.cmake,
             '-GNinja',
             '-DCMAKE_MAKE_PROGRAM={}'.format(self.ninja),
-            '-DLLVM_ENABLE_ASSERTIONS=On',
+            '-DLLVM_ENABLE_ASSERTIONS={}'.format(
+                'ON' if self.enable_asserts else 'OFF'),
             '-DCMAKE_BUILD_TYPE={}'.format(self.build_type),
             '-DCMAKE_INSTALL_PREFIX={}'.format(self.install_prefix),
         ]
@@ -213,6 +216,7 @@ def BuildProduct(config):
         extra_cmake_flags=extra_cmake_flags,
         njobs=config.njobs,
         use_mimalloc=config.use_mimalloc,
+        enable_asserts=not config.no_asserts,
     )
     builder.runtimes = []
     if config.minimal:
@@ -231,11 +235,14 @@ def BuildProduct(config):
             'mlir',
             'polly',
             'compiler-rt',
-            'libcxx',
-            'libcxxabi',
             'libunwind',
             'openmp',
         ]
+        # See https://reviews.llvm.org/D126905.
+        builder.runtimes.extend([
+            'libcxx',
+            'libcxxabi',
+        ])
     err = builder.Config()
     if err != 0:
         return err
@@ -430,6 +437,7 @@ def main():
     prod.add_argument('--native', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
     prod.add_argument('--binutils_include')
+    prod.add_argument('--no_asserts', action='store_true', default=False)
     AddCommonArguments(prod)
     prod.set_defaults(func=BuildProduct)
 
