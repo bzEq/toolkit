@@ -23,11 +23,11 @@ def CPack(path, num_threads=1):
         '-G',
         'TXZ',
         '-D',
-        'CPACK_THREADS={}'.format(num_threads),
+        f'CPACK_THREADS={num_threads}',
     ]
     cp = subprocess.run(cpack_cmd, cwd=path)
     if cp.returncode != 0:
-        logging.error("Can't pack with {}".format(cpack_cmd))
+        logging.error(f"Can't pack with {cpack_cmd}")
     return cp.returncode
 
 
@@ -52,7 +52,7 @@ class Builder(object):
         config_only=False,
         njobs=os.cpu_count(),
         ninja_targets=[],
-        use_mimalloc=False,
+        use_malloc=None,
         enable_asserts=True,
     ):
         assert monorepo
@@ -75,28 +75,30 @@ class Builder(object):
         self.build_type = build_type
         self.config_only = config_only
         self.njobs = njobs
-        self.use_mimalloc = use_mimalloc
+        self.use_malloc = use_malloc
         self.enable_asserts = enable_asserts
 
     def BuildCMakeCommand(self):
         cmake_command = [
             self.cmake,
             '-GNinja',
-            '-DCMAKE_MAKE_PROGRAM={}'.format(self.ninja),
+            f'-DCMAKE_MAKE_PROGRAM={self.ninja}',
             '-DLLVM_ENABLE_ASSERTIONS={}'.format(
                 'TRUE' if self.enable_asserts else 'FALSE'),
-            '-DCMAKE_BUILD_TYPE={}'.format(self.build_type),
-            '-DCMAKE_INSTALL_PREFIX={}'.format(self.install_prefix),
+            f'-DCMAKE_BUILD_TYPE={self.build_type}',
+            f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}',
         ]
-        if self.use_mimalloc:
-            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS=-lmimalloc')
-            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS=-lmimalloc')
+        if self.use_malloc:
+            cmake_command.append(
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-l{self.use_malloc}')
+            cmake_command.append(
+                f'-DCMAKE_EXE_LINKER_FLAGS=-l{self.use_malloc}')
         if self.cc:
-            cmake_command.append('-DCMAKE_C_COMPILER={}'.format(self.cc))
+            cmake_command.append(f'-DCMAKE_C_COMPILER={self.cc}')
         if self.cxx:
-            cmake_command.append('-DCMAKE_CXX_COMPILER={}'.format(self.cxx))
+            cmake_command.append(f'-DCMAKE_CXX_COMPILER={self.cxx}')
         if self.ld:
-            cmake_command.append('-DLLVM_USE_LINKER={}'.format(self.ld))
+            cmake_command.append(f'-DLLVM_USE_LINKER={self.ld}')
         if self.cflags:
             cmake_command.append('-DCMAKE_C_FLAGS={}'.format(
                 shlex.join(self.cflags)))
@@ -132,7 +134,7 @@ class Builder(object):
         cmake_command.extend(['-B', build_dir])
         err = subprocess.call(cmake_command)
         if err != 0:
-            logging.error('cmake failed: {}'.format(cmake_command))
+            logging.error(f'cmake failed: {cmake_command}')
         return err
 
     def ConfigAndBuild(self):
@@ -152,7 +154,7 @@ class Builder(object):
         ninja_command.extend(self.ninja_targets)
         err = subprocess.call(ninja_command, cwd=self.build_dir)
         if err != 0:
-            logging.error('ninja failed: {}'.format(ninja_command))
+            logging.error(f'ninja failed: {ninja_command}')
         return err
 
 
@@ -164,7 +166,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
-    parser.add_argument('--use_mimalloc', action='store_true', default=False)
+    parser.add_argument('--use_malloc', default=None)
 
 
 def BuildProduct(config):
@@ -172,8 +174,8 @@ def BuildProduct(config):
     if config.dylib:
         extra_cmake_flags.append('-DLLVM_LINK_LLVM_DYLIB=TRUE')
     if config.binutils_include:
-        extra_cmake_flags.append('-DLLVM_BINUTILS_INCDIR={path}'.format(
-            path=config.binutils_include))
+        extra_cmake_flags.append(
+            f'-DLLVM_BINUTILS_INCDIR={config.binutils_include}')
     if config.use_newpm:
         extra_cmake_flags.append('-DLLVM_USE_NEWPM=TRUE')
     if config.llvm_toolchain:
@@ -215,7 +217,7 @@ def BuildProduct(config):
         config_only=config.config_only,
         extra_cmake_flags=extra_cmake_flags,
         njobs=config.njobs,
-        use_mimalloc=config.use_mimalloc,
+        use_malloc=config.use_malloc,
         enable_asserts=not config.no_asserts,
     )
     builder.runtimes = []
