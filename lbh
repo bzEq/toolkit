@@ -261,7 +261,6 @@ def BuildForDev(options):
     extra_cmake_flags = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
-    extra_cmake_flags.append('-DLLVM_PARALLEL_LINK_JOBS=3')
     builder = Builder(options.monorepo,
                       options.build_dir,
                       options.install_prefix,
