@@ -197,7 +197,7 @@ def BuildProduct(config):
 
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_rt_atomic:
-        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=TRUE')
+        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
     if config.lto:
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     cflags = ['-pipe']
@@ -261,6 +261,10 @@ def BuildForDev(options):
     extra_cmake_flags = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
+    if options.build_rt_atomic:
+        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
+        extra_cmake_flags.append(
+            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     builder = Builder(options.monorepo,
                       options.build_dir,
                       options.install_prefix,
@@ -422,6 +426,7 @@ def main():
     dev.add_argument('--lld', default=shutil.which('ld.lld'))
     dev.add_argument('--debug', action='store_true', default=False)
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
+    dev.add_argument('--build_rt_atomic', action='store_true', default=False)
     dev.set_defaults(func=BuildForDev)
 
     # Prod build.
