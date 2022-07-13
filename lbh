@@ -279,6 +279,7 @@ def BuildForDev(options):
                       projects=[
                           'clang',
                           'compiler-rt',
+                          'libunwind',
                           'lld',
                           'clang-tools-extra',
                       ])
