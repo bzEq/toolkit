@@ -443,6 +443,9 @@ def main():
     prod.add_argument('--minimal', action='store_true', default=False)
     prod.add_argument('--use_newpm', action='store_true', default=False)
     prod.add_argument('--enable_rt_atomic', action='store_true', default=False)
+    prod.add_argument('--enable_rt_standalone_atomic',
+                      action='store_true',
+                      default=False)
     prod.add_argument('--lto', action='store_true', default=False)
     prod.add_argument('--native', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
