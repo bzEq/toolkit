@@ -13,7 +13,12 @@ cd ${LLVM_DEV}/llvm-project && git checkout main && \
                             --monorepo ${LLVM_DEV}/llvm-project \
                             --build_dir $PWD \
                             --clang ../default/bin/clang \
-                            --lld ../default/bin/ld.lld --config_only && \
+                            --lld ../default/bin/ld.lld \
+                            --use_newpm \
+                            --native \
+                            --build_llvm_runtimes \
+                            --use_malloc mimalloc \
+                            --config_only && \
     ninja clean && ninja && \
     ninja check-all && \
     cpack -G TXZ -D CPACK_THREADS=$(nproc)
