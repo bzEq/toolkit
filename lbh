@@ -240,11 +240,11 @@ def BuildProduct(config):
             'mlir',
             'polly',
             'compiler-rt',
-            'libunwind',
             'openmp',
         ]
         # See https://reviews.llvm.org/D126905.
         builder.runtimes.extend([
+            'libunwind',
             'libcxx',
             'libcxxabi',
         ])
@@ -266,26 +266,33 @@ def BuildForDev(options):
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
     if options.build_rt_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
+    if options.build_rt_standalone_atomic:
         extra_cmake_flags.append(
             '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
-    builder = Builder(options.monorepo,
-                      options.build_dir,
-                      options.install_prefix,
-                      build_type=build_type,
-                      cc=options.clang,
-                      cxx=options.clang + '++',
-                      ld=options.lld,
-                      cflags=['-pipe'],
-                      cxxflags=['-pipe'],
-                      extra_cmake_flags=extra_cmake_flags,
-                      config_only=options.config_only,
-                      projects=[
-                          'clang',
-                          'compiler-rt',
-                          'libunwind',
-                          'lld',
-                          'clang-tools-extra',
-                      ])
+    builder = Builder(
+        options.monorepo,
+        options.build_dir,
+        options.install_prefix,
+        build_type=build_type,
+        cc=options.clang,
+        cxx=options.clang + '++',
+        ld=options.lld,
+        cflags=['-pipe'],
+        cxxflags=['-pipe'],
+        extra_cmake_flags=extra_cmake_flags,
+        config_only=options.config_only,
+        projects=[
+            'clang',
+            'compiler-rt',
+            'lld',
+            'clang-tools-extra',
+        ],
+        runtimes=[
+            'libunwind',
+            'libcxx',
+            'libcxxabi',
+        ],
+    )
     return builder.ConfigAndBuild()
 
 
@@ -431,6 +438,9 @@ def main():
     dev.add_argument('--debug', action='store_true', default=False)
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.add_argument('--build_rt_atomic', action='store_true', default=False)
+    dev.add_argument('--build_rt_standalone_atomic',
+                     action='store_true',
+                     default=False)
     dev.set_defaults(func=BuildForDev)
 
     # Prod build.
