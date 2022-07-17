@@ -176,8 +176,7 @@ def BuildProduct(config):
     if config.binutils_include:
         extra_cmake_flags.append(
             f'-DLLVM_BINUTILS_INCDIR={config.binutils_include}')
-    if config.use_newpm:
-        extra_cmake_flags.append('-DLLVM_USE_NEWPM=TRUE')
+    extra_cmake_flags.append('-DLLVM_USE_NEWPM=TRUE')
     if config.llvm_toolchain:
         # All in llvm's toolchain.
         extra_cmake_flags.append('-DCLANG_DEFAULT_PIE_ON_LINUX=TRUE')
@@ -261,6 +260,7 @@ def BuildForDev(options):
     if options.debug:
         build_type = 'RelWithDebInfo'
     extra_cmake_flags = []
+    extra_cmake_flags.append('-DLLVM_USE_NEWPM=TRUE')
     runtimes = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
@@ -452,7 +452,6 @@ def main():
     prod.add_argument('--lld', default=shutil.which('ld.lld'))
     prod.add_argument('--llvm_toolchain', action='store_true', default=False)
     prod.add_argument('--minimal', action='store_true', default=False)
-    prod.add_argument('--use_newpm', action='store_true', default=False)
     prod.add_argument('--enable_rt_atomic', action='store_true', default=False)
     prod.add_argument('--lto', action='store_true', default=False)
     prod.add_argument('--native', action='store_true', default=False)
