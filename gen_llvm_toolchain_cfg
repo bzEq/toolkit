@@ -52,5 +52,7 @@ if __name__ == '__main__':
     sys.stdout.write(f'-Wl,-rpath,{target_libdir}\n')
     sys.stdout.write(f'-Wl,-rpath,{rt_libdir}\n')
     sys.stdout.write(f'-L{rt_libdir}\n')
+    sys.stdout.write('-Wl,-as-needed\n')
     sys.stdout.write(f'-l:libclang_rt.atomic.so\n')
     sys.stdout.write(f'-lpthread\n')
+    sys.stdout.write('-Wl,-no-as-needed\n')
