@@ -53,6 +53,5 @@ if __name__ == '__main__':
     print(f'-Wl,-rpath,{rt_libdir}')
     print(f'-L{rt_libdir}')
     print('-Wl,-as-needed')
-    print(f'-l:libclang_rt.atomic.so')
-    print(f'-lpthread')
+    print('-l:libclang_rt.atomic.so')
     print('-Wl,-no-as-needed')
