@@ -198,9 +198,6 @@ def BuildProduct(config):
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_rt_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
-    if config.enable_rt_standalone_atomic:
-        extra_cmake_flags.append(
-            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     if config.lto:
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     cflags = ['-pipe']
@@ -248,6 +245,8 @@ def BuildProduct(config):
             'libcxx',
             'libcxxabi',
         ])
+        extra_cmake_flags.append(
+            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     err = builder.Config()
     if err != 0:
         return err
@@ -262,13 +261,19 @@ def BuildForDev(options):
     if options.debug:
         build_type = 'RelWithDebInfo'
     extra_cmake_flags = []
+    runtimes = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
-    if options.build_rt_atomic:
-        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
-    if options.build_rt_standalone_atomic:
+    if options.build_llvm_runtimes:
+        runtimes.extend([
+            'libunwind',
+            'libcxx',
+            'libcxxabi',
+        ])
         extra_cmake_flags.append(
             '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
+    if options.build_rt_atomic:
+        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
     builder = Builder(
         options.monorepo,
         options.build_dir,
@@ -287,11 +292,7 @@ def BuildForDev(options):
             'lld',
             'clang-tools-extra',
         ],
-        runtimes=[
-            'libunwind',
-            'libcxx',
-            'libcxxabi',
-        ],
+        runtimes=runtimes,
     )
     return builder.ConfigAndBuild()
 
@@ -438,7 +439,7 @@ def main():
     dev.add_argument('--debug', action='store_true', default=False)
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.add_argument('--build_rt_atomic', action='store_true', default=False)
-    dev.add_argument('--build_rt_standalone_atomic',
+    dev.add_argument('--build_llvm_runtimes',
                      action='store_true',
                      default=False)
     dev.set_defaults(func=BuildForDev)
@@ -453,9 +454,6 @@ def main():
     prod.add_argument('--minimal', action='store_true', default=False)
     prod.add_argument('--use_newpm', action='store_true', default=False)
     prod.add_argument('--enable_rt_atomic', action='store_true', default=False)
-    prod.add_argument('--enable_rt_standalone_atomic',
-                      action='store_true',
-                      default=False)
     prod.add_argument('--lto', action='store_true', default=False)
     prod.add_argument('--native', action='store_true', default=False)
     prod.add_argument('--dylib', action='store_true', default=False)
