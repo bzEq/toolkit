@@ -176,7 +176,7 @@ def BuildProduct(config):
     if config.binutils_include:
         extra_cmake_flags.append(
             f'-DLLVM_BINUTILS_INCDIR={config.binutils_include}')
-    if config.llvm_toolchain:
+    if config.default_llvm_toolchain:
         # All in llvm's toolchain.
         extra_cmake_flags.append('-DCLANG_DEFAULT_PIE_ON_LINUX=TRUE')
         extra_cmake_flags.append('-DCLANG_DEFAULT_LINKER=lld')
@@ -448,7 +448,9 @@ def main():
     # See https://clang.llvm.org/docs/Toolchain.html.
     prod.add_argument('--clang', default=shutil.which('clang'))
     prod.add_argument('--lld', default=shutil.which('ld.lld'))
-    prod.add_argument('--llvm_toolchain', action='store_true', default=False)
+    prod.add_argument('--default_llvm_toolchain',
+                      action='store_true',
+                      default=False)
     prod.add_argument('--minimal', action='store_true', default=False)
     prod.add_argument('--enable_rt_atomic', action='store_true', default=False)
     prod.add_argument('--lto', action='store_true', default=False)
