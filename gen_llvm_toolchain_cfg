@@ -42,7 +42,7 @@ if __name__ == '__main__':
     libdir = os.path.abspath(
         os.path.join(os.path.dirname(clang_path), '../lib'))
     target_libdir = os.path.join(libdir, target)
-    rt_libdir = os.path.join(libdir, f'clang/{version}/lib/{sys.platform}')
+    rt_libdir = os.path.join(libdir, f'clang/{version}/lib/{target}')
     # Write result to stdout.
     sys.stdout.write('--rtlib=compiler-rt\n')
     sys.stdout.write('--unwindlib=libunwind\n')
@@ -52,5 +52,5 @@ if __name__ == '__main__':
     sys.stdout.write(f'-Wl,-rpath,{target_libdir}\n')
     sys.stdout.write(f'-Wl,-rpath,{rt_libdir}\n')
     sys.stdout.write(f'-L{rt_libdir}\n')
-    sys.stdout.write(f'-l:libclang_rt.atomic-{platform.machine()}.so\n')
+    sys.stdout.write(f'-l:libclang_rt.atomic.so\n')
     sys.stdout.write(f'-lpthread\n')
