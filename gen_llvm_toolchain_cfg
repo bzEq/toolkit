@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import subprocess
+import re
+import platform
+
+VERSION_LINE = r'clang version ([0-9]+\.[0-9]+\.[0-9]+)'
+TARGET_LINE = r'Target: (.*)'
+
+
+def GetClangVersionAndTarget(clang_path):
+    cmd = [
+        clang_path,
+        '--version',
+    ]
+    p = subprocess.run(cmd, capture_output=True)
+    output = p.stdout.decode('utf8')
+    m = re.search(VERSION_LINE, output)
+    if not m:
+        return None, None
+    version = m.group(1)
+    m = re.search(TARGET_LINE, output)
+    if not m:
+        return None, None
+    target = m.group(1)
+    return version, target
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        sys.stderr.write(f'Usage: {sys.argv[0]} <path_to_clang>\n')
+        sys.exit(1)
+    clang_path = os.path.abspath(os.path.realpath(sys.argv[1]))
+    bin_path = os.path.dirname(clang_path)
+    version, target = GetClangVersionAndTarget(clang_path)
+    if not version or not target:
+        sys.stderr.write("Unable to get clang's version or target.")
+        sys.exit(1)
+    libdir = os.path.abspath(
+        os.path.join(os.path.dirname(clang_path), '../lib'))
+    target_libdir = os.path.join(libdir, target)
+    rt_libdir = os.path.join(libdir, f'clang/{version}/lib/{sys.platform}')
+    # Write result to stdout.
+    sys.stdout.write('--rtlib=compiler-rt\n')
+    sys.stdout.write('--unwindlib=libunwind\n')
+    sys.stdout.write('--stdlib=libc++\n')
+    sys.stdout.write('--ld-path={}\n'.format(os.path.join(bin_path, 'ld.lld')))
+    sys.stdout.write(f'-Wl,-rpath,{libdir}\n')
+    sys.stdout.write(f'-Wl,-rpath,{target_libdir}\n')
+    sys.stdout.write(f'-Wl,-rpath,{rt_libdir}\n')
+    sys.stdout.write(f'-L{rt_libdir}\n')
+    sys.stdout.write(f'-l:libclang_rt.atomic-{platform.machine()}.so\n')
+    sys.stdout.write(f'-lpthread\n')
