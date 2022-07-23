@@ -196,6 +196,9 @@ def BuildProduct(config):
     # Use at risk, since atomic in compiler-rt will be statically linked against.
     if config.enable_rt_atomic:
         extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
+    else:
+        extra_cmake_flags.append(
+            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     if config.lto:
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     cflags = ['-pipe']
@@ -243,8 +246,6 @@ def BuildProduct(config):
             'libcxx',
             'libcxxabi',
         ])
-        extra_cmake_flags.append(
-            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     err = builder.Config()
     if err != 0:
         return err
