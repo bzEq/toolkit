@@ -268,10 +268,12 @@ def BuildForDev(options):
             'libcxx',
             'libcxxabi',
         ])
-        extra_cmake_flags.append(
-            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
-    if options.build_rt_atomic:
-        extra_cmake_flags.append('-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
+        if options.build_rt_atomic:
+            extra_cmake_flags.append(
+                '-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
+        else:
+            extra_cmake_flags.append(
+                '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     builder = Builder(
         options.monorepo,
         options.build_dir,
