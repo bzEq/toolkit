@@ -44,6 +44,7 @@ if __name__ == '__main__':
     target_libdir = os.path.join(libdir, target)
     rt_libdir = os.path.join(libdir, f'clang/{version}/lib/{target}')
     # Write result to stdout.
+    print('-pipe')
     print('--rtlib=compiler-rt')
     print('--unwindlib=libunwind')
     print('--stdlib=libc++')
