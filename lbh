@@ -311,9 +311,9 @@ def BuildForDev(options):
 def BootstrapMinimal(config):
     if config.stage < 0 or config.stage > 3:
         config.stage = 3
-    cc = config.bootstrap_cc
+    cc = config.stage0_cc
     cxx = InferCXX(cc)
-    ld = config.bootstrap_ld
+    ld = config.stage0_ld
     builders = [None]
     for i in range(1, config.stage + 1):
         p = os.path.join(os.path.abspath(config.build_dir), f'stage{i}')
@@ -415,10 +415,8 @@ def main():
         description='Bootstrap a minimal Clang/LLVM toolchain.')
     AddCommonArguments(bootstrap_minimal)
     bootstrap_minimal.add_argument('--stage', type=int, default=3)
-    bootstrap_minimal.add_argument('--bootstrap_cc',
-                                   default=shutil.which('gcc'))
-    bootstrap_minimal.add_argument('--bootstrap_ld',
-                                   default=shutil.which('ld'))
+    bootstrap_minimal.add_argument('--stage0_cc', default=shutil.which('gcc'))
+    bootstrap_minimal.add_argument('--stage0_ld', default=shutil.which('ld'))
     bootstrap_minimal.set_defaults(func=BootstrapMinimal)
 
     # Dev build.
