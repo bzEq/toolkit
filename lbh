@@ -72,7 +72,7 @@ class Builder(object):
         self.build_dir = os.path.abspath(build_dir)
         self.install_prefix = os.path.abspath(install_prefix)
         self.cc = os.path.abspath(cc) if cc else None
-        self.cxx = os.path.abspath(cxx) if cc else None
+        self.cxx = os.path.abspath(cxx) if cxx else None
         self.ld = os.path.abspath(ld) if ld else None
         self.cflags = cflags
         self.cxxflags = cxxflags
@@ -220,7 +220,7 @@ def BuildProduct(config):
         config.build_dir,
         config.install_prefix,
         cc=config.clang,
-        cxx=config.clang + '++',
+        cxx=InferCXX(config.clang),
         cflags=cflags,
         cxxflags=cxxflags,
         ld=config.lld,
@@ -290,7 +290,7 @@ def BuildForDev(options):
         options.install_prefix,
         build_type=build_type,
         cc=options.clang,
-        cxx=options.clang + '++',
+        cxx=InferCXX(options.clang),
         ld=options.lld,
         cflags=['-pipe'],
         cxxflags=['-pipe'],
