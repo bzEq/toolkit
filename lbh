@@ -13,6 +13,14 @@ import time
 import copy
 
 
+def InferCXX(cc):
+    if cc.endswith('gcc'):
+        return cc.removesuffix('gcc') + 'g++'
+    if cc.endswith('clang'):
+        return cc.removesuffix('clang') + 'clang++'
+    raise Exception(f'Unrecognized compiler: {cc}')
+
+
 def CPack(path, num_threads=1):
     cpack = shutil.which('cpack')
     if not cpack:
@@ -97,7 +105,8 @@ class Builder(object):
             cmake_command.append(f'-DCMAKE_C_COMPILER={self.cc}')
         if self.cxx:
             cmake_command.append(f'-DCMAKE_CXX_COMPILER={self.cxx}')
-        if self.ld:
+        # GCC doesn't support -fuse-ld yet.
+        if self.ld and not self.cc.endswith('gcc'):
             cmake_command.append(f'-DLLVM_USE_LINKER={self.ld}')
         if self.cflags:
             cmake_command.append('-DCMAKE_C_FLAGS={}'.format(
@@ -298,52 +307,36 @@ def BuildForDev(options):
     return builder.ConfigAndBuild()
 
 
+# https://www.douban.com/note/835674433/?_i=99072274iOHVLN.
 def BootstrapMinimal(config):
-    stage1_path = os.path.join(os.path.abspath(config.build_dir), 'stage1')
-    stage2_path = os.path.join(os.path.abspath(config.build_dir), 'stage2')
-    os.makedirs(stage1_path, exist_ok=True)
-    os.makedirs(stage2_path, exist_ok=True)
-    # Stage1.
-    stage1_builder = Builder(config.monorepo,
-                             stage1_path,
-                             config.install_prefix,
-                             cc=config.bootstrap_cc,
-                             ld=config.bootstrap_ld,
-                             cflags=['-pipe'],
-                             cxxflags=['-pipe'],
-                             projects=['clang', 'lld'],
-                             njobs=config.njobs)
-    err = stage1_builder.ConfigAndBuild()
-    if err != 0:
-        logging.error('Stage1 failed.')
-        return err
-    if config.skip_stage2:
-        return CPack(stage1_path, config.njobs)
-    stage2_builder = Builder(config.monorepo,
-                             stage2_path,
-                             config.install_prefix,
-                             cc=os.path.join(stage1_path, 'bin', 'clang'),
-                             cflags=['-pipe'],
-                             cxxflags=['-pipe'],
-                             ld=os.path.join(stage1_path, 'bin', 'ld.lld'),
-                             projects=[
-                                 'clang',
-                                 'lld',
-                                 'clang-tools-extra',
-                             ],
-                             runtimes=['compiler-rt'],
-                             njobs=config.njobs)
-    err = stage2_builder.ConfigAndBuild()
-    if err != 0:
-        logging.error('Stage2 failed.')
-        return err
-    if not config.skip_stage2_test:
-        stage2_builder.ninja_targets = ['check-all']
-        err = stage2_builder.Build()
+    cc = config.bootstrap_cc
+    cxx = InferCXX(cc)
+    ld = config.bootstrap_ld
+    builders = [None]
+    for i in range(1, 4):
+        p = os.path.join(os.path.abspath(config.build_dir), f'stage{i}')
+        os.makedirs(p, exist_ok=True)
+        builder = Builder(config.monorepo,
+                          p,
+                          config.install_prefix,
+                          cc=cc,
+                          cxx=cxx,
+                          ld=ld,
+                          cflags=['-pipe'],
+                          cxxflags=['-pipe'],
+                          projects=['clang', 'lld'],
+                          njobs=config.njobs)
+        builder.ninja_targets = ['all', 'check-all']
+        err = builder.ConfigAndBuild()
         if err != 0:
-            logging.error('Stage2 test failed.')
+            logging.error(f'Stage{i} failed.')
             return err
-    return CPack(stage2_path, config.njobs)
+        builders.append(builder)
+        cc = os.path.join(p, 'bin/clang')
+        cxx = os.path.join(p, 'bin/clang++')
+        ld = os.path.join(p, 'bin/ld.lld')
+    # TODO: Compare binaries of stage2 and stage3.
+    return CPack(builders[3].build_dir, config.njobs)
 
 
 def BuildWithPGOAndLTO(config):
@@ -423,12 +416,6 @@ def main():
                                    default=shutil.which('gcc'))
     bootstrap_minimal.add_argument('--bootstrap_ld',
                                    default=shutil.which('ld'))
-    bootstrap_minimal.add_argument('--skip_stage2',
-                                   default=False,
-                                   action='store_true')
-    bootstrap_minimal.add_argument('--skip_stage2_test',
-                                   action='store_true',
-                                   default=False)
     bootstrap_minimal.set_defaults(func=BootstrapMinimal)
 
     # Dev build.
