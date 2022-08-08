@@ -91,6 +91,7 @@ class Builder(object):
             self.cmake,
             '-GNinja',
             f'-DCMAKE_MAKE_PROGRAM={self.ninja}',
+            '-DLLVM_ENABLE_BINDINGS=OFF',
             '-DLLVM_ENABLE_ASSERTIONS={}'.format(
                 'TRUE' if self.enable_asserts else 'FALSE'),
             f'-DCMAKE_BUILD_TYPE={self.build_type}',
