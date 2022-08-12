@@ -15,6 +15,7 @@ cd ${LLVM_DEV}/llvm-project && git checkout main && \
                             --clang ../default/bin/clang \
                             --lld ../default/bin/ld.lld \
                             --build_llvm_runtimes \
+                            --build_polly \
                             --use_malloc mimalloc \
                             --config_only && \
     ninja clean && ninja && \

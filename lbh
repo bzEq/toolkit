@@ -285,6 +285,14 @@ def BuildForDev(options):
         else:
             extra_cmake_flags.append(
                 '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
+    projects = [
+        'clang',
+        'compiler-rt',
+        'lld',
+        'clang-tools-extra',
+    ]
+    if options.build_polly:
+        projects.append('polly')
     builder = Builder(
         options.monorepo,
         options.build_dir,
@@ -297,12 +305,7 @@ def BuildForDev(options):
         cxxflags=['-pipe'],
         extra_cmake_flags=extra_cmake_flags,
         config_only=options.config_only,
-        projects=[
-            'clang',
-            'compiler-rt',
-            'lld',
-            'clang-tools-extra',
-        ],
+        projects=projects,
         runtimes=runtimes,
     )
     return builder.ConfigAndBuild()
@@ -437,6 +440,7 @@ def main():
     dev.add_argument('--build_llvm_runtimes',
                      action='store_true',
                      default=False)
+    dev.add_argument('--build_polly', action='store_true', default=False)
     dev.set_defaults(func=BuildForDev)
 
     # Prod build.
