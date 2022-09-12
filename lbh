@@ -478,10 +478,7 @@ def main():
     if not config.subcmd:
         parser.print_help()
         return -1
-    start = time.perf_counter()
-    err = config.func(config)
-    end = time.perf_counter()
-    return err
+    return config.func(config)
 
 
 if __name__ == '__main__':
