@@ -21,6 +21,23 @@ def InferCXX(cc):
     raise Exception(f'Unrecognized compiler: {cc}')
 
 
+def GetClangSearchDirs(clang):
+    cmd = [
+        clang,
+        '-print-search-dirs',
+    ]
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    res = {}
+    SEP = ': ='
+    if p.returncode == 0:
+        for line in p.stdout.splitlines():
+            i = line.index(SEP)
+            lhs = line[:i].strip()
+            rhs = line[(i + len(SEP)):].strip()
+            res[lhs] = rhs
+    return res
+
+
 def CPack(path, num_threads=1):
     cpack = shutil.which('cpack')
     if not cpack:
@@ -62,6 +79,7 @@ class Builder(object):
         ninja_targets=[],
         use_malloc=None,
         enable_asserts=True,
+        env={},
     ):
         assert monorepo
         assert build_dir
@@ -85,6 +103,7 @@ class Builder(object):
         self.njobs = njobs
         self.use_malloc = use_malloc
         self.enable_asserts = enable_asserts
+        self.env = env
 
     def BuildCMakeCommand(self):
         cmake_command = [
@@ -142,7 +161,9 @@ class Builder(object):
         cmake_command = self.BuildCMakeCommand()
         cmake_command.extend(['-S', src_dir])
         cmake_command.extend(['-B', build_dir])
-        err = subprocess.call(cmake_command)
+        env = os.environ.copy()
+        env.update(self.env)
+        err = subprocess.call(cmake_command, env=env)
         if err != 0:
             logging.error(f'cmake failed: {cmake_command}')
         return err
@@ -162,7 +183,9 @@ class Builder(object):
             '-j%d' % self.njobs,
         ]
         ninja_command.extend(self.ninja_targets)
-        err = subprocess.call(ninja_command, cwd=self.build_dir)
+        env = os.environ.copy()
+        env.update(self.env)
+        err = subprocess.call(ninja_command, cwd=self.build_dir, env=env)
         if err != 0:
             logging.error(f'ninja failed: {ninja_command}')
         return err
@@ -312,13 +335,24 @@ def BuildForDev(options):
 
 
 # https://www.douban.com/note/835674433/?_i=99072274iOHVLN.
-def BootstrapMinimal(config):
+def Bootstrap(config):
     if config.stage < 0 or config.stage > 3:
         config.stage = 3
     cc = config.stage0_cc
     cxx = InferCXX(cc)
     ld = config.stage0_ld
     builders = [None]
+    runtimes = []
+    if config.use_llvm_runtimes:
+        runtimes.extend([
+            'compiler-rt',
+            'libcxx',
+            'libcxxabi',
+            'libunwind',
+        ])
+    cflags = ['-pipe']
+    cxxflags = ['-pipe']
+    env = {}
     for i in range(1, config.stage + 1):
         p = os.path.join(os.path.abspath(config.build_dir), f'stage{i}')
         os.makedirs(p, exist_ok=True)
@@ -328,10 +362,12 @@ def BootstrapMinimal(config):
                           cc=cc,
                           cxx=cxx,
                           ld=ld,
-                          cflags=['-pipe'],
-                          cxxflags=['-pipe'],
+                          cflags=cflags,
+                          cxxflags=cxxflags,
                           projects=['clang', 'lld'],
-                          njobs=config.njobs)
+                          njobs=config.njobs,
+                          runtimes=runtimes,
+                          env=env)
         builder.ninja_targets = ['all']
         if not config.no_check:
             builder.ninja_targets.append('check-all')
@@ -343,6 +379,13 @@ def BootstrapMinimal(config):
         cc = os.path.join(p, 'bin/clang')
         cxx = os.path.join(p, 'bin/clang++')
         ld = os.path.join(p, 'bin/ld.lld')
+        if config.use_llvm_runtimes:
+            cflags.append('-rtlib=compiler-rt')
+            cxxflags.append('-rtlib=compiler-rt')
+            cxxflags.append('-stdlib=libc++')
+            cxxflags.append('-unwindlib=libunwind')
+            search_dirs = GetClangSearchDirs(cc)
+            env['LD_LIBRARY_PATH'] = search_dirs['libraries']
     # TODO: Compare binaries of stage2 and stage3.
     return CPack(builders[-1].build_dir, config.njobs)
 
@@ -416,17 +459,17 @@ def main():
     repo.set_defaults(func=UpdateRepo)
 
     # Bootstrap build.
-    bootstrap_minimal = subparsers.add_parser(
-        'bootstrap_minimal',
-        description='Bootstrap a minimal Clang/LLVM toolchain.')
-    AddCommonArguments(bootstrap_minimal)
-    bootstrap_minimal.add_argument('--stage', type=int, default=3)
-    bootstrap_minimal.add_argument('--stage0_cc', default=shutil.which('gcc'))
-    bootstrap_minimal.add_argument('--stage0_ld', default=shutil.which('ld'))
-    bootstrap_minimal.add_argument('--no_check',
-                                   action='store_true',
-                                   default=False)
-    bootstrap_minimal.set_defaults(func=BootstrapMinimal)
+    bootstrap = subparsers.add_parser(
+        'bootstrap', description='Bootstrap a Clang/LLVM toolchain.')
+    AddCommonArguments(bootstrap)
+    bootstrap.add_argument('--stage', type=int, default=3)
+    bootstrap.add_argument('--stage0_cc', default=shutil.which('gcc'))
+    bootstrap.add_argument('--stage0_ld', default=shutil.which('ld'))
+    bootstrap.add_argument('--no_check', action='store_true', default=False)
+    bootstrap.add_argument('--use_llvm_runtimes',
+                           action='store_true',
+                           default=False)
+    bootstrap.set_defaults(func=Bootstrap)
 
     # Dev build.
     dev = subparsers.add_parser('dev',
