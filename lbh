@@ -21,12 +21,12 @@ def InferCXX(cc):
     raise Exception(f'Unrecognized compiler: {cc}')
 
 
-def GetClangSearchDirs(clang):
+def GetClangSearchDirs(clang, env=None):
     cmd = [
         clang,
         '-print-search-dirs',
     ]
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    p = subprocess.run(cmd, capture_output=True, text=True, env=env)
     res = {}
     SEP = ': ='
     if p.returncode == 0:
@@ -384,13 +384,14 @@ def Bootstrap(config):
         cxx = os.path.join(p, 'bin/clang++')
         ld = os.path.join(p, 'bin/ld.lld')
         if config.use_llvm_runtimes:
-            cflags.append('-rtlib=compiler-rt')
-            cflags.append('-unwindlib=libunwind')
-            cxxflags.append('-rtlib=compiler-rt')
-            cxxflags.append('-unwindlib=libunwind')
-            cxxflags.append('-stdlib=libc++')
+            if i == 1:
+                cflags.append('-rtlib=compiler-rt')
+                cflags.append('-unwindlib=libunwind')
+                cxxflags.append('-rtlib=compiler-rt')
+                cxxflags.append('-unwindlib=libunwind')
+                cxxflags.append('-stdlib=libc++')
             driver = os.path.realpath(cc)
-            search_dirs = GetClangSearchDirs(driver)['libraries']
+            search_dirs = GetClangSearchDirs(driver, env)['libraries']
             # Use runtimes built by previous stage.
             env['LD_LIBRARY_PATH'] = search_dirs
             # Use runtimes in installed trees.
