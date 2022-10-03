@@ -352,7 +352,7 @@ def Bootstrap(config):
         ])
     cflags = ['-pipe']
     cxxflags = ['-pipe']
-    env = {}
+    rpaths = set()
     for i in range(1, config.stage + 1):
         p = os.path.join(os.path.abspath(config.build_dir), f'stage{i}')
         os.makedirs(p, exist_ok=True)
@@ -370,7 +370,7 @@ def Bootstrap(config):
             runtimes=runtimes,
             # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
             extra_cmake_flags=['-DCMAKE_POSITION_INDEPENDENT_CODE=On'],
-            env=env)
+        )
         builder.ninja_targets = ['all']
         if not config.no_check:
             builder.ninja_targets.append('check-all')
@@ -393,9 +393,12 @@ def Bootstrap(config):
             for sdir in search_dirs['libraries'].split(os.pathsep):
                 if not sdir.startswith(p):
                     continue
-                relapth = os.path.relpath(sdir, os.path.dirname(driver))
-                cflags.append('-Wl,-rpath=$$ORIGIN/' + relapth)
-                cxxflags.append('-Wl,-rpath=$$ORIGIN/' + relapth)
+                relpath = os.path.join(
+                    '$$ORIGIN', os.path.relpath(sdir, os.path.dirname(driver)))
+                if relpath not in rpaths:
+                    cflags.append(f'-Wl,-rpath={relpath}')
+                    cxxflags.append(f'-Wl,-rpath={relpath}')
+                    rpaths.add(relpath)
     # TODO: Compare binaries of stage2 and stage3.
     return CPack(builders[-1].build_dir, config.njobs)
 
