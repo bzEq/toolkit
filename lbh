@@ -384,11 +384,18 @@ def Bootstrap(config):
         ld = os.path.join(p, 'bin/ld.lld')
         if config.use_llvm_runtimes:
             cflags.append('-rtlib=compiler-rt')
+            cflags.append('-unwindlib=libunwind')
             cxxflags.append('-rtlib=compiler-rt')
-            cxxflags.append('-stdlib=libc++')
             cxxflags.append('-unwindlib=libunwind')
-            search_dirs = GetClangSearchDirs(cc)
-            env['LD_LIBRARY_PATH'] = search_dirs['libraries']
+            cxxflags.append('-stdlib=libc++')
+            driver = os.path.realpath(cc)
+            search_dirs = GetClangSearchDirs(driver)
+            for sdir in search_dirs['libraries'].split(os.pathsep):
+                if not sdir.startswith(p):
+                    continue
+                relapth = os.path.relpath(sdir, os.path.dirname(driver))
+                cflags.append('-Wl,-rpath=$$ORIGIN/' + relapth)
+                cxxflags.append('-Wl,-rpath=$$ORIGIN/' + relapth)
     # TODO: Compare binaries of stage2 and stage3.
     return CPack(builders[-1].build_dir, config.njobs)
 
