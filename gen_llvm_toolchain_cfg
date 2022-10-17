@@ -43,16 +43,23 @@ if __name__ == '__main__':
         os.path.join(os.path.dirname(clang_path), '../lib'))
     target_libdir = os.path.join(libdir, target)
     rt_libdir = os.path.join(libdir, f'clang/{version}/lib/{target}')
+    lld = os.path.join(bin_path, 'ld.lld')
     # Write result to stdout.
-    print('-pipe')
-    print('--rtlib=compiler-rt')
-    print('--unwindlib=libunwind')
-    print('--stdlib=libc++')
-    print('--ld-path={}'.format(os.path.join(bin_path, 'ld.lld')))
-    print(f'-Wl,-rpath,{libdir}')
-    print(f'-Wl,-rpath,{target_libdir}')
-    print(f'-Wl,-rpath,{rt_libdir}')
-    print(f'-L{rt_libdir}')
-    print('-Wl,-as-needed')
-    print('-l:libclang_rt.atomic.so')
-    print('-Wl,-no-as-needed')
+    config = f'''\
+-pipe
+-O3
+-march=native
+-flto=thin
+-rtlib=compiler-rt
+-unwindlib=libunwind
+-stdlib=libc++
+--ld-path={lld}
+-Wl,-rpath,{libdir}
+-Wl,-rpath,{target_libdir}
+-Wl,-rpath,{rt_libdir}
+-L{rt_libdir}
+-Wl,-as-needed
+-l:libclang_rt.atomic.so
+-Wl,-no-as-needed
+'''
+    sys.stdout.write(config)
