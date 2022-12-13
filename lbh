@@ -371,6 +371,7 @@ def Bootstrap(config):
             # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
             extra_cmake_flags=['-DCMAKE_POSITION_INDEPENDENT_CODE=On'],
             env=env,
+            use_malloc=config.use_malloc,
         )
         builder.ninja_targets = ['all']
         if not config.no_check:
