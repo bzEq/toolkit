@@ -291,7 +291,7 @@ def BuildProduct(config):
 def BuildForDev(options):
     build_type = 'Release'
     if options.debug:
-        build_type = 'RelWithDebInfo'
+        build_type = 'Debug'
     extra_cmake_flags = []
     runtimes = []
     if options.build_shared_libs:
