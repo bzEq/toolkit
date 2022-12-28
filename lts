@@ -7,9 +7,11 @@ import argparse
 import shutil
 import subprocess
 import logging
+import shlex
 
 
 class Builder(object):
+
     def __init__(self, config):
         self.config = config
 
@@ -25,16 +27,23 @@ class Builder(object):
         return self.Build()
 
     def Config(self):
+        cflags = [
+            '-pipe',
+            '--ld-path={}'.format(self.FindTool('ld.lld')),
+        ]
+        cxxflags = cflags[:]
+        if self.config.cflags:
+            cflags.extend(shlex.split(self.config.cflags))
+        if self.config.cxxflags:
+            cxxflags.extend(shlex.split(self.config.cxxflags))
         cmd = [
             self.config.cmake_binary,
             '-GNinja',
             '-DCMAKE_BUILD_TYPE=Release',
             '-DCMAKE_C_COMPILER={}'.format(self.FindTool('clang')),
             '-DCMAKE_CXX_COMPILER={}'.format(self.FindTool('clang++')),
-            '-DCMAKE_C_FLAGS=-pipe --ld-path={}'.format(
-                self.FindTool('ld.lld')),
-            '-DCMAKE_CXX_FLAGS=-pipe --ld-path={}'.format(
-                self.FindTool('ld.lld')),
+            '-DCMAKE_C_FLAGS={}'.format(shlex.join(cflags)),
+            '-DCMAKE_CXX_FLAGS={}'.format(shlex.join(cxxflags)),
             '-S',
             os.path.abspath(self.config.src_dir),
             '-B',
@@ -65,6 +74,8 @@ def main():
     parser.add_argument('--llvm_build_dir', required=True)
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
+    parser.add_argument('--cflags')
+    parser.add_argument('--cxxflags')
     parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
     config = parser.parse_args()
     return Builder(config).ConfigAndBuild()
