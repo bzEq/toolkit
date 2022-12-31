@@ -374,7 +374,7 @@ def Bootstrap(config):
             use_malloc=config.use_malloc,
         )
         builder.ninja_targets = ['all']
-        if not config.no_check:
+        if not config.no_check and i == config.stage:
             builder.ninja_targets.append('check-all')
         err = builder.ConfigAndBuild()
         if err != 0:
