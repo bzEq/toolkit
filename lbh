@@ -83,12 +83,12 @@ class Builder(object):
     ):
         assert monorepo
         assert build_dir
-        assert install_prefix
         self.cmake = cmake
         self.ninja = ninja
         self.monorepo = os.path.abspath(monorepo)
         self.build_dir = os.path.abspath(build_dir)
-        self.install_prefix = os.path.abspath(install_prefix)
+        self.install_prefix = os.path.abspath(
+            install_prefix) if install_prefix else None
         self.cc = os.path.abspath(cc) if cc else None
         self.cxx = os.path.abspath(cxx) if cxx else None
         self.ld = os.path.abspath(ld) if ld else None
@@ -114,8 +114,10 @@ class Builder(object):
             '-DLLVM_ENABLE_ASSERTIONS={}'.format(
                 'TRUE' if self.enable_asserts else 'FALSE'),
             f'-DCMAKE_BUILD_TYPE={self.build_type}',
-            f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}',
         ]
+        if self.install_prefix:
+            cmake_command.append(
+                f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}')
         if self.use_malloc:
             cmake_command.append(
                 f'-DCMAKE_SHARED_LINKER_FLAGS=-l{self.use_malloc}')
@@ -126,7 +128,8 @@ class Builder(object):
         if self.cxx:
             cmake_command.append(f'-DCMAKE_CXX_COMPILER={self.cxx}')
         # GCC doesn't support -fuse-ld yet.
-        if self.ld and not self.cc.endswith('gcc'):
+        if self.ld and not (self.cc.endswith('gcc')
+                            or self.cxx.endswith('g++')):
             cmake_command.append(f'-DLLVM_USE_LINKER={self.ld}')
         if self.cflags:
             cmake_command.append('-DCMAKE_C_FLAGS={}'.format(
@@ -192,14 +195,14 @@ class Builder(object):
 
 
 def AddCommonArguments(parser):
-    parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
-    parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
-    parser.add_argument('--config_only', action='store_true', default=False)
-    parser.add_argument('--install_prefix', required=True)
     parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
+    parser.add_argument('--install_prefix')
+    parser.add_argument('--config_only', action='store_true', default=False)
     parser.add_argument('-j', dest='njobs', type=int, default=os.cpu_count())
     parser.add_argument('--use_malloc', default=None)
+    parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
+    parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
 
 
 def BuildProduct(config):
