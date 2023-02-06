@@ -12,7 +12,7 @@ use-linker = 'lld'
 docs = false
 
 [rust]
-default-linker = '/usr/local/bin/mold'
+# default-linker = '/usr/local/bin/mold'
 lld = true
 use-lld = true
 jemalloc = true
