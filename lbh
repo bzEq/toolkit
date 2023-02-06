@@ -352,6 +352,9 @@ def Bootstrap(config):
     ]
     cflags = ['-pipe']
     cxxflags = ['-pipe']
+    if config.opt:
+        cflags.append('-march=native')
+        cxxflags.append('-march=native')
     # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
     extra_cmake_flags = ['-DCMAKE_POSITION_INDEPENDENT_CODE=On']
     env = {}
@@ -375,7 +378,7 @@ def Bootstrap(config):
                 '-unwindlib=libunwind',
                 '-stdlib=libc++',
             ])
-            if config.lto:
+            if config.opt:
                 stage_extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
             prev_stage_install_prefix = builders[i - 1].install_prefix
             cc = os.path.join(prev_stage_install_prefix, 'bin/clang')
@@ -400,7 +403,11 @@ def Bootstrap(config):
             ld=ld,
             cflags=stage_cflags,
             cxxflags=stage_cxxflags,
-            projects=['clang', 'lld'],
+            projects=[
+                'clang',
+                'clang-tools-extra',
+                'lld',
+            ],
             njobs=config.njobs,
             runtimes=runtimes,
             extra_cmake_flags=stage_extra_cmake_flags,
@@ -494,7 +501,7 @@ def main():
     bootstrap.add_argument('--stage', type=int, default=3)
     bootstrap.add_argument('--stage0_cc', default=shutil.which('gcc'))
     bootstrap.add_argument('--stage0_ld', default=shutil.which('ld'))
-    bootstrap.add_argument('--lto', action='store_true', default=False)
+    bootstrap.add_argument('--opt', action='store_true', default=False)
     bootstrap.add_argument('--no_check', action='store_true', default=False)
     bootstrap.set_defaults(func=Bootstrap)
 
