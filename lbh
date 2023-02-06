@@ -128,8 +128,7 @@ class Builder(object):
         if self.cxx:
             cmake_command.append(f'-DCMAKE_CXX_COMPILER={self.cxx}')
         # GCC doesn't support -fuse-ld yet.
-        if self.ld and not (self.cc.endswith('gcc')
-                            or self.cxx.endswith('g++')):
+        if self.ld and not self.cc.endswith('gcc'):
             cmake_command.append(f'-DLLVM_USE_LINKER={self.ld}')
         if self.cflags:
             cmake_command.append('-DCMAKE_C_FLAGS={}'.format(
@@ -345,38 +344,70 @@ def Bootstrap(config):
     cxx = InferCXX(cc)
     ld = config.stage0_ld
     builders = [None]
-    runtimes = []
-    if config.use_llvm_runtimes:
-        runtimes.extend([
-            'compiler-rt',
-            'libcxx',
-            'libcxxabi',
-            'libunwind',
-        ])
+    runtimes = [
+        'compiler-rt',
+        'libcxx',
+        'libcxxabi',
+        'libunwind',
+    ]
     cflags = ['-pipe']
     cxxflags = ['-pipe']
+    # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
+    extra_cmake_flags = ['-DCMAKE_POSITION_INDEPENDENT_CODE=On']
     env = {}
     for i in range(1, config.stage + 1):
-        p = os.path.join(os.path.abspath(config.build_dir), f'stage{i}')
-        os.makedirs(p, exist_ok=True)
+        stage_dir = os.path.join(os.path.abspath(config.build_dir),
+                                 f'stage{i}')
+        stage_build_dir = os.path.join(stage_dir, 'build')
+        stage_install_dir = os.path.join(stage_dir, 'install')
+        os.makedirs(stage_build_dir, exist_ok=True)
+        os.makedirs(stage_install_dir, exist_ok=True)
+        stage_cflags = cflags[:]
+        stage_cxxflags = cxxflags[:]
+        stage_extra_cmake_flags = extra_cmake_flags[:]
+        if i > 1:
+            stage_cflags.extend([
+                '-rtlib=compiler-rt',
+                '-unwindlib=libunwind',
+            ])
+            stage_cxxflags.extend([
+                '-rtlib=compiler-rt',
+                '-unwindlib=libunwind',
+                '-stdlib=libc++',
+            ])
+            if config.lto:
+                stage_extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+            prev_stage_install_prefix = builders[i - 1].install_prefix
+            cc = os.path.join(prev_stage_install_prefix, 'bin/clang')
+            cxx = os.path.join(prev_stage_install_prefix, 'bin/clang++')
+            ld = os.path.join(prev_stage_install_prefix, 'bin/ld.lld')
+            search_dirs = GetClangSearchDirs(cc, env)['libraries']
+            env['LD_LIBRARY_PATH'] = search_dirs
+            if i == config.stage:
+                for sdir in search_dirs.split(os.pathsep):
+                    if not sdir.startswith(prev_stage_install_prefix):
+                        continue
+                    relpath = os.path.join(
+                        '$$ORIGIN', os.path.relpath(sdir, os.path.dirname(cc)))
+                    stage_cflags.append(f'-Wl,-rpath={relpath}')
+                    stage_cxxflags.append(f'-Wl,-rpath={relpath}')
         builder = Builder(
             config.monorepo,
-            p,
-            config.install_prefix,
+            stage_build_dir,
+            stage_install_dir,
             cc=cc,
             cxx=cxx,
             ld=ld,
-            cflags=cflags,
-            cxxflags=cxxflags,
+            cflags=stage_cflags,
+            cxxflags=stage_cxxflags,
             projects=['clang', 'lld'],
             njobs=config.njobs,
             runtimes=runtimes,
-            # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
-            extra_cmake_flags=['-DCMAKE_POSITION_INDEPENDENT_CODE=On'],
+            extra_cmake_flags=stage_extra_cmake_flags,
             env=env,
             use_malloc=config.use_malloc,
         )
-        builder.ninja_targets = ['all']
+        builder.ninja_targets = ['install']
         if not config.no_check and i == config.stage:
             builder.ninja_targets.append('check-all')
         err = builder.ConfigAndBuild()
@@ -384,30 +415,6 @@ def Bootstrap(config):
             logging.error(f'Stage{i} failed.')
             return err
         builders.append(builder)
-        cc = os.path.join(p, 'bin/clang')
-        cxx = os.path.join(p, 'bin/clang++')
-        ld = os.path.join(p, 'bin/ld.lld')
-        if config.use_llvm_runtimes:
-            if i == 1:
-                cflags.append('-rtlib=compiler-rt')
-                cflags.append('-unwindlib=libunwind')
-                cxxflags.append('-rtlib=compiler-rt')
-                cxxflags.append('-unwindlib=libunwind')
-                cxxflags.append('-stdlib=libc++')
-            driver = os.path.realpath(cc)
-            search_dirs = GetClangSearchDirs(driver, env)['libraries']
-            # Use runtimes built by previous stage.
-            env['LD_LIBRARY_PATH'] = search_dirs
-            # Use runtimes in installed trees.
-            if i == config.stage - 1:
-                for sdir in search_dirs.split(os.pathsep):
-                    if not sdir.startswith(p):
-                        continue
-                    relpath = os.path.join(
-                        '$$ORIGIN',
-                        os.path.relpath(sdir, os.path.dirname(driver)))
-                    cflags.append(f'-Wl,-rpath={relpath}')
-                    cxxflags.append(f'-Wl,-rpath={relpath}')
     # TODO: Compare binaries of stage2 and stage3.
     return CPack(builders[-1].build_dir, config.njobs)
 
@@ -487,10 +494,8 @@ def main():
     bootstrap.add_argument('--stage', type=int, default=3)
     bootstrap.add_argument('--stage0_cc', default=shutil.which('gcc'))
     bootstrap.add_argument('--stage0_ld', default=shutil.which('ld'))
+    bootstrap.add_argument('--lto', action='store_true', default=False)
     bootstrap.add_argument('--no_check', action='store_true', default=False)
-    bootstrap.add_argument('--use_llvm_runtimes',
-                           action='store_true',
-                           default=False)
     bootstrap.set_defaults(func=Bootstrap)
 
     # Dev build.
