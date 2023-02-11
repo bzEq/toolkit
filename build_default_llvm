@@ -1,16 +1,16 @@
 #!/bin/sh
 set -e
 
-LLVM_DEV=${LLVM_DEV:-"/build/llvm-dev"}
+LLVM_STAGING=${LLVM_STAGING:-"/build/llvm-staging"}
 
-cd ${LLVM_DEV}/llvm-project && git checkout main && \
+cd ${LLVM_STAGING}/llvm-project && git checkout main && \
     lbh repo && \
-    cd ${LLVM_DEV}/build/default && \
+    cd ${LLVM_STAGING}/build/default && \
     ninja && ninja check-all && \
-    rm -rf ${LLVM_DEV}/build/bootstrap/* && \
-    cd ${LLVM_DEV}/build/bootstrap && \
+    rm -rf ${LLVM_STAGING}/build/bootstrap/* && \
+    cd ${LLVM_STAGING}/build/bootstrap && \
     lbh dev --install_prefix /opt/clang-nightly \
-                            --monorepo ${LLVM_DEV}/llvm-project \
+                            --monorepo ${LLVM_STAGING}/llvm-project \
                             --build_dir $PWD \
                             --clang ../default/bin/clang \
                             --lld ../default/bin/ld.lld \
