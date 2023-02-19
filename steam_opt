@@ -93,6 +93,7 @@ def main():
                         action='store_true',
                         default=False,
                         help='Try to enable FSR support in proton')
+    parser.add_argument('--bind_cpus', help='Bind process to specific CPUs')
     my_argv, command = SplitArgv(sys.argv[1:])
     if not command:
         parser.print_help(sys.stderr)
@@ -107,6 +108,13 @@ def main():
     UseMalloc(config.malloc)
     if config.preload:
         ext_LD_PRELOAD.update(config.preload)
+    if config.bind_cpus:
+        command_prefix = [
+            'numactl',
+            '-l',
+        ]
+        command_prefix.append(f'-C{config.bind_cpus}')
+        command = command_prefix + command
     return RunProgram(command)
 
 
