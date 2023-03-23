@@ -291,9 +291,6 @@ def BuildProduct(config):
 
 
 def BuildForDev(options):
-    build_type = 'Release'
-    if options.debug:
-        build_type = 'Debug'
     extra_cmake_flags = []
     runtimes = []
     if options.build_shared_libs:
@@ -322,7 +319,7 @@ def BuildForDev(options):
         options.monorepo,
         options.build_dir,
         options.install_prefix,
-        build_type=build_type,
+        build_type=options.build_type,
         cc=options.clang,
         cxx=InferCXX(options.clang),
         ld=options.lld,
@@ -511,7 +508,7 @@ def main():
     AddCommonArguments(dev)
     dev.add_argument('--clang', default=shutil.which('clang'))
     dev.add_argument('--lld', default=shutil.which('ld.lld'))
-    dev.add_argument('--debug', action='store_true', default=False)
+    dev.add_argument('--build_type', default='Release')
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.add_argument('--build_rt_atomic', action='store_true', default=False)
     dev.add_argument('--build_llvm_runtimes',
