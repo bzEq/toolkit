@@ -6,6 +6,7 @@ import sys
 import argparse
 import shutil
 import logging
+import subprocess
 
 
 def SplitArgv(argv):
@@ -94,6 +95,7 @@ def main():
                         default=False,
                         help='Try to enable FSR support in proton')
     parser.add_argument('--bind_cpus', help='Bind process to specific CPUs')
+    parser.add_argument('--cpu_affinity', help='Set process affinity')
     my_argv, command = SplitArgv(sys.argv[1:])
     if not command:
         parser.print_help(sys.stderr)
@@ -115,6 +117,17 @@ def main():
         ]
         command_prefix.append(f'-C{config.bind_cpus}')
         command = command_prefix + command
+    if config.cpu_affinity:
+        pid = os.getpid()
+        cmd = [
+            'taskset',
+            '-acp',
+            config.cpu_affinity,
+            f'{pid}',
+        ]
+        subprocess.run(cmd,
+                       stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL)
     return RunProgram(command)
 
 
