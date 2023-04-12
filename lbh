@@ -329,6 +329,7 @@ def BuildForDev(options):
         config_only=options.config_only,
         projects=projects,
         runtimes=runtimes,
+        use_malloc=options.use_malloc,
     )
     return builder.ConfigAndBuild()
 
