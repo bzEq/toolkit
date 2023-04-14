@@ -13,7 +13,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
                             --monorepo ${LLVM_STAGING}/llvm-project \
                             --build_dir $PWD \
                             --clang ../default/bin/clang \
-                            --lld ../default/bin/ld.lld \
+                            --lld $(which ld) \
                             --build_llvm_runtimes \
                             --build_polly \
                             --use_malloc mimalloc \
