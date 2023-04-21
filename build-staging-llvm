@@ -13,7 +13,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
                             --monorepo ${LLVM_STAGING}/llvm-project \
                             --build_dir $PWD \
                             --clang ../default/bin/clang \
-                            --lld $(which ld)
+                            --lld ../default/bin/ld.lld
                             --build_llvm_runtimes \
                             --config_only && \
     ninja clean && ninja && \
