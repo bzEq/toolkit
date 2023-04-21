@@ -311,10 +311,7 @@ def BuildForDev(options):
     projects = [
         'clang',
         'lld',
-        'clang-tools-extra',
     ]
-    if options.build_polly:
-        projects.append('polly')
     builder = Builder(
         options.monorepo,
         options.build_dir,
@@ -515,7 +512,6 @@ def main():
     dev.add_argument('--build_llvm_runtimes',
                      action='store_true',
                      default=False)
-    dev.add_argument('--build_polly', action='store_true', default=False)
     dev.set_defaults(func=BuildForDev)
 
     # Prod build.
