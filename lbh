@@ -297,6 +297,7 @@ def BuildForDev(options):
         extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
     if options.build_llvm_runtimes:
         runtimes.extend([
+            'compiler-rt',
             'libunwind',
             'libcxx',
             'libcxxabi',
@@ -309,7 +310,6 @@ def BuildForDev(options):
                 '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     projects = [
         'clang',
-        'compiler-rt',
         'lld',
         'clang-tools-extra',
     ]
