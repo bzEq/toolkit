@@ -13,11 +13,9 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
                             --monorepo ${LLVM_STAGING}/llvm-project \
                             --build_dir $PWD \
                             --clang ../default/bin/clang \
-                            --lld $(which ld) \
+                            --lld ../default/bin/ld.lld \
                             --build_llvm_runtimes \
-                            --build_polly \
                             --use_malloc mimalloc \
                             --config_only && \
     ninja clean && ninja && \
-    ninja check-all && \
-    cpack -G TXZ -D CPACK_THREADS=$(nproc)
+    ninja check-all
