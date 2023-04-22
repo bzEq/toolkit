@@ -15,9 +15,9 @@ import copy
 
 def InferCXX(cc):
     if cc.endswith('gcc'):
-        return cc.removesuffix('gcc') + 'g++'
+        return cc[:-len('gcc')] + 'g++'
     if cc.endswith('clang'):
-        return cc.removesuffix('clang') + 'clang++'
+        return cc[:-len('clang')] + 'clang++'
     raise Exception(f'Unrecognized compiler: {cc}')
 
 
