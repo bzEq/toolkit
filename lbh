@@ -294,7 +294,7 @@ def BuildForDev(options):
     extra_cmake_flags = []
     runtimes = []
     if options.build_shared_libs:
-        extra_cmake_flags.append('-DLLVM_BUILD_LLVM_DYLIB=YES')
+        extra_cmake_flags.append('-DBUILD_SHARED_LIBS=YES')
     if options.build_llvm_runtimes:
         runtimes.extend([
             'compiler-rt',
@@ -350,6 +350,8 @@ def Bootstrap(config):
         cxxflags.append('-march=native')
     # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
     extra_cmake_flags = ['-DCMAKE_POSITION_INDEPENDENT_CODE=On']
+    if config.llvm_dylib:
+        extra_cmake_flags.append('-LLVM_BUILD_LLVM_DYLIB=On')
     env = {}
     for i in range(1, config.stage + 1):
         stage_dir = os.path.join(os.path.abspath(config.build_dir),
@@ -496,6 +498,7 @@ def main():
     bootstrap.add_argument('--stage0_ld', default=shutil.which('ld'))
     bootstrap.add_argument('--opt', action='store_true', default=False)
     bootstrap.add_argument('--no_check', action='store_true', default=False)
+    bootstrap.add_argument('--llvm_dylib', action='store_true', default=False)
     bootstrap.set_defaults(func=Bootstrap)
 
     # Dev build.
