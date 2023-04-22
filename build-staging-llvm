@@ -14,7 +14,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
       --build_dir $PWD \
       --clang ../default/bin/clang \
       --lld ../default/bin/ld.lld \
-      --build_llvm_runtimes \
+      --build_runtimes \
       --config_only && \
   ninja clean && ninja && \
   ninja check-all

@@ -295,7 +295,7 @@ def BuildForDev(options):
     runtimes = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DBUILD_SHARED_LIBS=YES')
-    if options.build_llvm_runtimes:
+    if options.build_runtimes:
         runtimes.extend([
             'compiler-rt',
             'libunwind',
@@ -510,9 +510,7 @@ def main():
     dev.add_argument('--build_type', default='Release')
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.add_argument('--build_rt_atomic', action='store_true', default=False)
-    dev.add_argument('--build_llvm_runtimes',
-                     action='store_true',
-                     default=False)
+    dev.add_argument('--build_runtimes', action='store_true', default=False)
     dev.set_defaults(func=BuildForDev)
 
     # Prod build.
