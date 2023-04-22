@@ -299,8 +299,6 @@ def BuildForDev(options):
         runtimes.extend([
             'compiler-rt',
             'libunwind',
-            'libcxx',
-            'libcxxabi',
         ])
         if options.build_rt_atomic:
             extra_cmake_flags.append(
