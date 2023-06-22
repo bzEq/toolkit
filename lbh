@@ -394,7 +394,6 @@ def Bootstrap(config):
                     relpath = os.path.join(
                         '$$ORIGIN', os.path.relpath(sdir, os.path.dirname(cc)))
                     stage_ldflags.append(f'-Wl,-rpath={relpath}')
-                    stage_ldflags.append(f'-Wl,-rpath={relpath}')
         builder = Builder(
             config.monorepo,
             stage_build_dir,
