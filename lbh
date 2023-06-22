@@ -121,10 +121,7 @@ class Builder(object):
             cmake_command.append(
                 f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}')
         if self.use_malloc:
-            cmake_command.append(
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-l{self.use_malloc}')
-            cmake_command.append(
-                f'-DCMAKE_EXE_LINKER_FLAGS=-l{self.use_malloc}')
+            self.ldflags.append(f'-l{self.use_malloc}')
         if self.cc:
             cmake_command.append(f'-DCMAKE_C_COMPILER={self.cc}')
         if self.cxx:
@@ -138,17 +135,17 @@ class Builder(object):
         if self.cxxflags:
             cmake_command.append('-DCMAKE_CXX_FLAGS={}'.format(
                 shlex.join(self.cxxflags)))
-        if self.ldflags:
-            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS={}'.format(
-                shlex.join(self.ldflags)))
-            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS={}'.format(
-                shlex.join(self.ldflags)))
         if self.projects:
             cmake_command.append('-DLLVM_ENABLE_PROJECTS={}'.format(';'.join(
                 self.projects)))
         if self.runtimes:
             cmake_command.append('-DLLVM_ENABLE_RUNTIMES={}'.format(';'.join(
                 self.runtimes)))
+        if self.ldflags:
+            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
+            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
         cmake_command.extend(self.extra_cmake_flags)
         return cmake_command
 
@@ -352,7 +349,7 @@ def Bootstrap(config):
     ]
     cflags = ['-pipe']
     cxxflags = ['-pipe']
-    if config.opt:
+    if config.native:
         cflags.append('-march=native')
         cxxflags.append('-march=native')
     # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
@@ -379,7 +376,7 @@ def Bootstrap(config):
             stage_cxxflags.extend([
                 '-stdlib=libc++',
             ])
-            if config.opt:
+            if config.thinlto:
                 stage_extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
             prev_stage_install_prefix = builders[i - 1].install_prefix
             cc = os.path.join(prev_stage_install_prefix, 'bin/clang')
@@ -391,9 +388,9 @@ def Bootstrap(config):
                 for sdir in search_dirs.split(os.pathsep):
                     if not sdir.startswith(prev_stage_install_prefix):
                         continue
-                    relpath = os.path.join(
-                        '$$ORIGIN', os.path.relpath(sdir, os.path.dirname(cc)))
-                    stage_ldflags.append(f'-Wl,-rpath={relpath}')
+                    rpath = os.path.join(
+                        '$ORIGIN', os.path.relpath(sdir, os.path.dirname(cc)))
+                    stage_ldflags.append(f'-Wl,-rpath={rpath}')
         builder = Builder(
             config.monorepo,
             stage_build_dir,
@@ -502,10 +499,8 @@ def main():
     bootstrap.add_argument('--stage', type=int, default=3)
     bootstrap.add_argument('--stage0_cc', default=shutil.which('gcc'))
     bootstrap.add_argument('--stage0_ld', default=shutil.which('ld'))
-    bootstrap.add_argument('--opt',
-                           help='Enable native and thinlto build',
-                           action='store_true',
-                           default=False)
+    bootstrap.add_argument('--thinlto', action='store_true', default=False)
+    bootstrap.add_argument('--native', action='store_true', default=False)
     bootstrap.add_argument('--no_check', action='store_true', default=False)
     bootstrap.add_argument('--llvm_dylib', action='store_true', default=False)
     bootstrap.set_defaults(func=Bootstrap)
