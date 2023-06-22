@@ -496,7 +496,10 @@ def main():
     bootstrap.add_argument('--stage', type=int, default=3)
     bootstrap.add_argument('--stage0_cc', default=shutil.which('gcc'))
     bootstrap.add_argument('--stage0_ld', default=shutil.which('ld'))
-    bootstrap.add_argument('--opt', action='store_true', default=False)
+    bootstrap.add_argument('--opt',
+                           help='Enable native and thinlto build',
+                           action='store_true',
+                           default=False)
     bootstrap.add_argument('--no_check', action='store_true', default=False)
     bootstrap.add_argument('--llvm_dylib', action='store_true', default=False)
     bootstrap.set_defaults(func=Bootstrap)
