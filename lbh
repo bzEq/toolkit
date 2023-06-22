@@ -71,6 +71,7 @@ class Builder(object):
         ld=None,
         cflags=[],
         cxxflags=[],
+        ldflags=[],
         projects=[],
         runtimes=[],
         extra_cmake_flags=[],
@@ -94,6 +95,7 @@ class Builder(object):
         self.ld = os.path.abspath(ld) if ld else None
         self.cflags = cflags
         self.cxxflags = cxxflags
+        self.ldflags = ldflags
         self.projects = projects
         self.runtimes = runtimes
         self.extra_cmake_flags = extra_cmake_flags
@@ -136,6 +138,11 @@ class Builder(object):
         if self.cxxflags:
             cmake_command.append('-DCMAKE_CXX_FLAGS={}'.format(
                 shlex.join(self.cxxflags)))
+        if self.ldflags:
+            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
+            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
         if self.projects:
             cmake_command.append('-DLLVM_ENABLE_PROJECTS={}'.format(';'.join(
                 self.projects)))
@@ -362,15 +369,14 @@ def Bootstrap(config):
         os.makedirs(stage_install_dir, exist_ok=True)
         stage_cflags = cflags[:]
         stage_cxxflags = cxxflags[:]
+        stage_ldflags = []
         stage_extra_cmake_flags = extra_cmake_flags[:]
         if i > 1:
-            stage_cflags.extend([
+            stage_ldflags.extend([
                 '-rtlib=compiler-rt',
                 '-unwindlib=libunwind',
             ])
             stage_cxxflags.extend([
-                '-rtlib=compiler-rt',
-                '-unwindlib=libunwind',
                 '-stdlib=libc++',
             ])
             if config.opt:
@@ -387,8 +393,8 @@ def Bootstrap(config):
                         continue
                     relpath = os.path.join(
                         '$$ORIGIN', os.path.relpath(sdir, os.path.dirname(cc)))
-                    stage_cflags.append(f'-Wl,-rpath={relpath}')
-                    stage_cxxflags.append(f'-Wl,-rpath={relpath}')
+                    stage_ldflags.append(f'-Wl,-rpath={relpath}')
+                    stage_ldflags.append(f'-Wl,-rpath={relpath}')
         builder = Builder(
             config.monorepo,
             stage_build_dir,
@@ -398,6 +404,7 @@ def Bootstrap(config):
             ld=ld,
             cflags=stage_cflags,
             cxxflags=stage_cxxflags,
+            ldflags=stage_ldflags,
             projects=[
                 'clang',
                 'clang-tools-extra',
