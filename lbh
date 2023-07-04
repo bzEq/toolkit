@@ -310,10 +310,7 @@ def BuildForDev(options):
         else:
             extra_cmake_flags.append(
                 '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
-    projects = [
-        'clang',
-        'lld',
-    ]
+    projects = options.projects.split(';')
     builder = Builder(
         options.monorepo,
         options.build_dir,
@@ -512,6 +509,7 @@ def main():
     dev.add_argument('--clang', default=shutil.which('clang'))
     dev.add_argument('--lld', default=shutil.which('ld.lld'))
     dev.add_argument('--build_type', default='Release')
+    dev.add_argument('--projects', default='clang;lld')
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
     dev.add_argument('--build_rt_atomic', action='store_true', default=False)
     dev.add_argument('--build_runtimes', action='store_true', default=False)
