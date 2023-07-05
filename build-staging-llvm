@@ -6,6 +6,11 @@ LLVM_STAGING=${LLVM_STAGING:-"/build/llvm-staging"}
 cd ${LLVM_STAGING}/llvm-project && git checkout main && \
   lbh repo && \
   cd ${LLVM_STAGING}/build/default && \
+  lbh dev \
+      --monorepo ${LLVM_STAGING}/llvm-project \
+      --build_dir $PWD \
+      --build_runtimes \
+      --config_only && \
   ninja && ninja check-all && \
   rm -rf ${LLVM_STAGING}/build/bootstrap/* && \
   cd ${LLVM_STAGING}/build/bootstrap && \
