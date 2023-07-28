@@ -349,7 +349,8 @@ def Bootstrap(config):
     if config.native:
         cflags.append('-march=native')
         cxxflags.append('-march=native')
-    # CMake does not set the -fpic option when building static libraries. See https://github.com/gabime/spdlog/issues/1405.
+    # CMake does not set the -fpic option when building static libraries.
+    # See https://github.com/gabime/spdlog/issues/1405.
     extra_cmake_flags = ['-DCMAKE_POSITION_INDEPENDENT_CODE=On']
     if config.llvm_dylib:
         extra_cmake_flags.append('-LLVM_BUILD_LLVM_DYLIB=On')
@@ -365,6 +366,8 @@ def Bootstrap(config):
         stage_cxxflags = cxxflags[:]
         stage_ldflags = []
         stage_extra_cmake_flags = extra_cmake_flags[:]
+        # We have compiler-rt and libunwind enabled after stage1 compiler is
+        # built.
         if i > 1:
             stage_ldflags.extend([
                 '-rtlib=compiler-rt',
