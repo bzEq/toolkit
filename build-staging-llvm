@@ -11,7 +11,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
       --build_dir $PWD \
       --build_runtimes \
       --config_only && \
-  ninja && ninja check-all && \
+  ninja && ninja check-all check-runtimes && \
   rm -rf ${LLVM_STAGING}/build/bootstrap/* && \
   cd ${LLVM_STAGING}/build/bootstrap && \
   lbh dev \
@@ -22,4 +22,4 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
       --build_runtimes \
       --config_only && \
   ninja clean && ninja && \
-  ninja check-all
+  ninja check-all check-runtimes
