@@ -96,6 +96,10 @@ def main():
                         help='Try to enable FSR support in proton')
     parser.add_argument('--bind_cpus', help='Bind process to specific CPUs')
     parser.add_argument('--cpu_affinity', help='Set process affinity')
+    parser.add_argument('--high_priority',
+                        help='Set process at high priority',
+                        action='store_true',
+                        default=False)
     my_argv, command = SplitArgv(sys.argv[1:])
     if not command:
         parser.print_help(sys.stderr)
@@ -117,12 +121,26 @@ def main():
         ]
         command_prefix.append(f'-C{config.bind_cpus}')
         command = command_prefix + command
+    pid = os.getpid()
     if config.cpu_affinity:
-        pid = os.getpid()
         cmd = [
             'taskset',
             '-acp',
             config.cpu_affinity,
+            f'{pid}',
+        ]
+        subprocess.run(cmd,
+                       stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL)
+    if config.high_priority:
+        # One has to modify /etc/security/limits.conf to allow negative nice
+        # value.
+        # For example:
+        # @sudo            -       nice            -20
+        cmd = [
+            'renice',
+            '-n',
+            '-10',
             f'{pid}',
         ]
         subprocess.run(cmd,
