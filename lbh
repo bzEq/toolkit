@@ -415,6 +415,8 @@ def Bootstrap(config):
         builder.ninja_targets = ['install']
         if not config.no_check and i == config.stage:
             builder.ninja_targets.append('check-all')
+            if builder.runtimes:
+                builder.ninja_targets.append('check-runtimes')
         err = builder.ConfigAndBuild()
         if err != 0:
             logging.error(f'Stage{i} failed.')
