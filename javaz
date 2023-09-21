@@ -1,2 +1,4 @@
 #!/bin/sh
+# Use java with generational ZGC.
+
 exec java -XX:+UseZGC -XX:+ZGenerational "$@"
