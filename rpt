@@ -134,7 +134,7 @@ def main():
                        stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL)
     if config.high_priority:
-        # One has to modify /etc/security/limits.conf to allow negative nice
+        # User has to modify /etc/security/limits.conf to allow negative nice
         # value.
         # For example:
         # @sudo            -       nice            -20
