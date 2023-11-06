@@ -27,6 +27,11 @@ ext_LD_LIBRARY_PATH = set()
 ext_ENV = set()
 
 
+def EnableProtonNV():
+    ext_ENV.add('PROTON_HIDE_NVIDIA_GPU=0')
+    ext_ENV.add('PROTON_ENABLE_NVAPI=1')
+
+
 def EnableProtonFSR():
     ext_ENV.add('WINE_FULLSCREEN_FSR=1')
 
@@ -76,11 +81,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="{} -- %command% in steam's launch options".format(
             sys.argv[0]))
-    parser.add_argument('--enable_mangohud',
+    parser.add_argument('--mangohud',
                         action='store_true',
                         default=False,
                         help='Enable mangohud hooking')
-    parser.add_argument('--enable_mangohud_dlsym',
+    parser.add_argument('--mangohud_dlsym',
                         action='store_true',
                         default=False,
                         help='Enable mangohud dlsym hooking')
@@ -91,7 +96,7 @@ def main():
                         '--preload',
                         action='append',
                         help='Append library to LD_PRELOAD')
-    parser.add_argument('--enable_fsr',
+    parser.add_argument('--fsr',
                         action='store_true',
                         default=False,
                         help='Try to enable FSR support in proton')
@@ -101,17 +106,23 @@ def main():
                         help='Set process at high priority',
                         action='store_true',
                         default=False)
+    parser.add_argument('--nv',
+                        help='Tell proton to use NV card features',
+                        action='store_true',
+                        default=False)
     my_argv, command = SplitArgv(sys.argv[1:])
     if not command:
         parser.print_help(sys.stderr)
         return 1
     config = parser.parse_args(my_argv)
-    if config.enable_mangohud:
+    if config.mangohud:
         EnableMangoHud()
-    if config.enable_mangohud_dlsym:
+    if config.mangohud_dlsym:
         EnableMangoHudDlsym()
-    if config.enable_fsr:
+    if config.fsr:
         EnableProtonFSR()
+    if config.nv:
+        EnableProtonNV()
     UseMalloc(config.malloc)
     if config.preload:
         ext_LD_PRELOAD.update(config.preload)
