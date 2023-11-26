@@ -40,8 +40,9 @@ def EnableProtonRayTracing():
     ext_ENV.add('VKD3D_CONFIG=dxr,dxr11')
 
 
-def EnableProtonFSR():
+def EnableProtonFSR(level='ultra'):
     ext_ENV.add('WINE_FULLSCREEN_FSR=1')
+    ext_ENV.add(f'WINE_FULLSCREEN_FSR_MODE={level}')
 
 
 def EnableMangoHud():
@@ -105,8 +106,8 @@ def main():
                         action='append',
                         help='Append library to LD_PRELOAD')
     parser.add_argument('--fsr',
-                        action='store_true',
-                        default=False,
+                        type=str,
+                        default='ultra',
                         help='Try to enable FSR support in proton')
     parser.add_argument('--bind_cpus', help='Bind process to specific CPUs')
     parser.add_argument('--cpu_affinity', help='Set process affinity')
@@ -128,7 +129,7 @@ def main():
     if config.mangohud_dlsym:
         EnableMangoHudDlsym()
     if config.fsr:
-        EnableProtonFSR()
+        EnableProtonFSR(config.fsr)
     EnableProtonNVCard()
     EnableProtonRayTracing()
     if config.nv:
