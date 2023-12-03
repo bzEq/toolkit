@@ -124,10 +124,8 @@ def main():
         EnableMangoHudDlsym()
     if config.fsr:
         EnableProtonFSR(config.fsr)
-    EnableProtonNVCard()
-    EnableProtonRayTracing()
-    if config.nv:
-        EnableProtonNVAPI()
+    if config.rtx:
+        EnableProtonRTX()
     UseMalloc(config.malloc)
     if config.preload:
         ext_LD_PRELOAD.update(config.preload)
