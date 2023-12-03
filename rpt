@@ -27,17 +27,11 @@ ext_LD_LIBRARY_PATH = set()
 ext_ENV = set()
 
 
-def EnableProtonNVCard():
+def EnableProtonRTX():
     ext_ENV.add('PROTON_HIDE_NVIDIA_GPU=0')
-
-
-def EnableProtonNVAPI():
+    ext_ENV.add('VKD3D_CONFIG=dxr11,dxr')
     ext_ENV.add('PROTON_ENABLE_NVAPI=1')
     ext_ENV.add('PROTON_ENABLE_NGX_UPDATER=1')
-
-
-def EnableProtonRayTracing():
-    ext_ENV.add('VKD3D_CONFIG=dxr,dxr11')
 
 
 def EnableProtonFSR(level='ultra'):
@@ -115,8 +109,8 @@ def main():
                         help='Set process at high priority',
                         action='store_true',
                         default=False)
-    parser.add_argument('--nv',
-                        help='Tell proton to use NV card features',
+    parser.add_argument('--rtx',
+                        help='Tell proton to use NV RTX card features',
                         action='store_true',
                         default=False)
     my_argv, command = SplitArgv(sys.argv[1:])
