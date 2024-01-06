@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import re
+import subprocess
+import shlex
+import shutil
+import tempfile
+import logging
+
+
+def main():
+    if len(sys.argv) != 2:
+        sys.stderr.write(f'Usage: {sys.argv[0]} <root>\n')
+        return 1
+    root = os.path.abspath(sys.argv[1])
+    # Collect directories in the tree.
+    parentdirs = {}
+    subdirs = {}
+    emptydirs = set()
+    soliddirs = set()
+    for current, dirs, files in os.walk(root):
+        subdirs[current] = set()
+        if not dirs and not files:
+            emptydirs.add(current)
+        for d in dirs:
+            subdir = os.path.join(current, d)
+            if subdir not in parentdirs:
+                parentdirs[subdir] = set()
+            parentdirs[subdir].add(current)
+            subdirs[current].add(subdir)
+        if files:
+            soliddirs.add(current)
+    while emptydirs:
+        worklist = list(emptydirs)
+        emptydirs.clear()
+        for d in worklist:
+            print(f'Removing {d}')
+            os.rmdir(d)
+            if d not in parentdirs:
+                continue
+            for p in parentdirs[d]:
+                subdirs[p].remove(d)
+                if not subdirs[p] and p not in soliddirs:
+                    emptydirs.add(p)
+    for d in soliddirs:
+        print(f'{d} is not empty')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
