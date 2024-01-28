@@ -10,6 +10,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
       --monorepo ${LLVM_STAGING}/llvm-project \
       --build_dir $PWD \
       --build_runtimes \
+      --use_malloc=mimalloc \
       --config_only && \
   ninja && ninja check-all check-runtimes && \
   rm -rf ${LLVM_STAGING}/build/bootstrap/* && \
@@ -20,6 +21,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
       --clang ../default/bin/clang \
       --lld ../default/bin/ld.lld \
       --build_runtimes \
+      --use_malloc=mimalloc \
       --config_only && \
   ninja clean && ninja && \
   ninja check-all check-runtimes
