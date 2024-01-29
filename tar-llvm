@@ -9,6 +9,8 @@ if [[ ${REV} =~ "main" ]]; then
   COMMITISH="main"
 fi
 
+export XZ_OPT='-T0'
+
 cd ${LLVM_DEV} && \
   git archive -o "/build/llvm-${REV}.tar.xz" \
       "${COMMITISH}" --prefix="llvm-${REV}/"
