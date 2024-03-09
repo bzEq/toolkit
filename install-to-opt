@@ -1,4 +1,4 @@
 #!/bin/sh
 export XZ_OPT="-T0"
-sudo tar -xvf "$@" --recursive-unlink --owner=root --group=root \
+sudo tar -xpvf "$@" --recursive-unlink --owner=root --group=root \
      --no-same-owner -C /opt
