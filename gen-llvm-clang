@@ -1,0 +1,20 @@
+#!/bin/bash
+cd /opt/clang/bin
+ln -sfn clang llvm-clang
+ln -sfn clang++ llvm-clang++
+cat > llvm-clang.cfg << EOF
+-pipe
+--ld-path=/opt/clang/bin/ld.lld
+-Wl,-rpath,/opt/clang/lib/x86_64-unknown-linux-gnu
+-rtlib=compiler-rt
+-unwindlib=libunwind
+EOF
+cat > llvm-clang++.cfg << EOF
+-pipe
+--ld-path=/opt/clang/bin/ld.lld
+-Wl,-rpath,/opt/clang/lib/x86_64-unknown-linux-gnu
+-rtlib=compiler-rt
+-unwindlib=libunwind
+-stdlib=libc++
+EOF
+
