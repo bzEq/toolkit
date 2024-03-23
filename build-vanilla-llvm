@@ -4,8 +4,8 @@ set -x
 
 DIR=$(dirname "$0")
 LLVM_BASE=${LLVM_BASE:-"/build/vanilla-llvm"}
-LBH=${DIR}/lbh
-LLB=${DIR}/llb
+LBH=$(realpath ${DIR}/lbh)
+LLB=$(realpath ${DIR}/llb)
 
 ! [[ -d ${LLVM_BASE}/staging ]] && mkdir ${LLVM_BASE}/staging
 
