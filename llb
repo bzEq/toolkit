@@ -407,11 +407,14 @@ def Bootstrap(config, stage):
                 '-march=native',
             ],
             ld=ld,
+            ldflags=[
+                f'--ld-path={ld}',
+            ],
             runtimes=GetRuntimes(),
             use_malloc='mimalloc',
             env=env,
             ninja_targets=GetRuntimeTargets(),
-            extra_cmake_flags=copy(extra_cmake_flags) + [
+            extra_cmake_flags=extra_cmake_flags + [
                 '-DLIBCXX_USE_COMPILER_RT=TRUE',
                 '-DLIBCXXABI_USE_COMPILER_RT=TRUE',
                 '-DLIBUNWIND_USE_COMPILER_RT=TRUE',
@@ -432,14 +435,15 @@ def Bootstrap(config, stage):
             os.path.join(BS.GetInstall(f'stage{i}'), 'include/c++/v1'),
         ])
         ldflags.extend([
+            f'--ld-path={ld}',
             # Link against the runtimes we just built.
             '-L{}'.format(libdir),
             '--rtlib=compiler-rt',
             '--unwindlib=libunwind',
+            '--stdlib=libc++',
             '-lc++',
-            '-lc++abi',
         ])
-        extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
+        # extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
         B = Builder(
             jobs=config.jobs,
             monorepo=config.monorepo,
