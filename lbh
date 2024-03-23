@@ -309,17 +309,10 @@ def BuildForDev(options):
     runtimes = []
     if options.build_shared_libs:
         extra_cmake_flags.append('-DBUILD_SHARED_LIBS=YES')
-    if options.build_runtimes:
-        runtimes.extend([
-            'compiler-rt',
-            'libunwind',
-        ])
-        if options.build_rt_atomic:
-            extra_cmake_flags.append(
-                '-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=FALSE')
-        else:
-            extra_cmake_flags.append(
-                '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
+    runtimes = options.runtimes.split(';')
+    if 'compiler-rt' in runtimes:
+        extra_cmake_flags.append(
+            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=TRUE')
     projects = options.projects.split(';')
     builder = Builder(
         options.monorepo,
@@ -527,10 +520,9 @@ def main():
     dev.add_argument('--clang', default=shutil.which('clang'))
     dev.add_argument('--lld', default=shutil.which('ld.lld'))
     dev.add_argument('--build_type', default='Release')
-    dev.add_argument('--projects', default='clang;lld')
     dev.add_argument('--build_shared_libs', action='store_true', default=False)
-    dev.add_argument('--build_rt_atomic', action='store_true', default=False)
-    dev.add_argument('--build_runtimes', action='store_true', default=False)
+    dev.add_argument('--projects', default='clang;lld')
+    dev.add_argument('--runtimes', default='compiler-rt')
     dev.set_defaults(func=BuildForDev)
 
     # Prod build.
