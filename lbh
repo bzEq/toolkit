@@ -86,6 +86,8 @@ class Builder(object):
     ):
         assert monorepo
         assert build_dir
+        self.werror = werror
+        self.ccache = ccache
         self.cmake = cmake
         self.ninja = ninja
         self.monorepo = os.path.abspath(monorepo)
@@ -120,9 +122,9 @@ class Builder(object):
             f'-DCMAKE_BUILD_TYPE={self.build_type}',
         ]
         if self.werror:
-            cmake_command.append('-LLVM_ENABLE_WERROR=ON')
+            cmake_command.append('-DLLVM_ENABLE_WERROR=ON')
         if self.ccache:
-            cmake_command.append('-LLVM_CCACHE_BUILD=ON')
+            cmake_command.append('-DLLVM_CCACHE_BUILD=ON')
         if self.install_prefix:
             cmake_command.append(
                 f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}')
