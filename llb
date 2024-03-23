@@ -1,0 +1,435 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Builder for LLVM project.
+
+import argparse
+import os
+import sys
+import re
+import subprocess
+import shlex
+import shutil
+import tempfile
+import logging
+
+
+def InferCXX(cc):
+    if cc.endswith('gcc'):
+        return cc[:-len('gcc')] + 'g++'
+    if cc.endswith('clang'):
+        return cc[:-len('clang')] + 'clang++'
+    raise Exception(f'Unrecognized compiler: {cc}')
+
+
+def BuildForStaging(config):
+    BS = BuildSpace(config.build_dir)
+    B1 = Builder(
+        monorepo=config.monorepo,
+        build_dir=BS.GetBuild('stage1'),
+        install_prefix=BS.GetInstall('stage1'),
+        cc=config.cc,
+        cxx=InferCXX(config.cc),
+        cflags=['-pipe'],
+        cxxflags=['-pipe'],
+        ld=config.ld,
+        projects=['clang', 'lld'],
+        runtimes=['compiler-rt'],
+        ninja_targets=[
+            'install-clang',
+            'install-lld',
+            'install-clang-resource-headers',
+            'install-runtimes',
+            'install-builtins',
+        ],
+    )
+    rc = B1.ConfigAndBuild()
+    if rc != 0:
+        return rc
+    cc = os.path.join(BS.GetInstall('stage1'), 'bin/clang')
+    ld = os.path.join(BS.GetInstall('stage1'), 'bin/ld.lld')
+    BS.RemoveBuild('stage2')
+    B2 = Builder(
+        monorepo=config.monorepo,
+        build_dir=BS.GetBuild('stage2'),
+        install_prefix=BS.GetInstall('stage2'),
+        cc=cc,
+        cxx=InferCXX(config.cc),
+        ld=ld,
+        projects=['clang', 'lld'],
+        runtimes=['compiler-rt'],
+        ninja_targets=[
+            'check-all',
+            'check-runtimes',
+        ],
+    )
+    return B2.ConfigAndBuild()
+
+
+def BuildForDev(config):
+    Builder(
+        monorepo=config.monorepo,
+        build_dir=config.build_dir,
+        cmake=config.cmake_binary,
+        ninja=config.ninja_binary,
+        ccache=True,
+        cc=config.cc,
+        cxx=InferCXX(config.cc),
+        cflags=['-pipe'],
+        cxxflags=['-pipe'],
+        ld=config.ld,
+        use_malloc='mimalloc',
+        projects=['clang', 'lld'],
+        runtimes=['compiler-rt'],
+        config_only=True,
+    ).ConfigAndBuild()
+
+
+def BuildForDebug(config):
+    Builder(monorepo=config.monorepo,
+            build_dir=config.build_dir,
+            cmake=config.cmake_binary,
+            ninja=config.ninja_binary,
+            build_type='Debug',
+            cc=config.cc,
+            cxx=InferCXX(config.cc),
+            cflags=['-pipe'],
+            cxxflags=['-pipe'],
+            ld=config.ld,
+            projects=['clang;lld'],
+            runtimes=['compiler-rt'],
+            config_only=True).ConfigAndBuild()
+
+
+def BuildClangProduct(config):
+    BS = BuildSpace(config.build_dir)
+    # Force to use GNU toolchain.
+    cc = shutil.which('gcc')
+    ld = shutil.which('ld')
+    B1 = Builder(
+        monorepo=config.monorepo,
+        build_dir=BS.GetBuild('stage1'),
+        install_prefix=BS.GetInstall('stage1'),
+        cc=cc,
+        cxx=InferCXX(cc),
+        cflags=['-pipe'],
+        cxxflags=['-pipe'],
+        ld=ld,
+        use_malloc='mimalloc',
+        projects=['clang', 'lld'],
+        runtimes=['compiler-rt'],
+        ninja_targets=[
+            'install-clang',
+            'install-lld',
+            'install-clang-resource-headers',
+            'install-runtimes',
+            'install-builtins',
+        ],
+    )
+    rc = B1.ConfigAndBuild()
+    if rc != 0:
+        return rc
+    cc = os.path.join(BS.GetInstall('stage1'), 'bin/clang')
+    ld = os.path.join(BS.GetInstall('stage1'), 'bin/ld.lld')
+    RB = RuntimeBuilder(
+        monorepo=config.monorepo,
+        build_dir=BS.GetBuild('stage1-runtimes'),
+        # Theorectically, runtimes built by stage1 and runtimes built by stage2 are binary level identical.
+        install_prefix=BS.GetInstall('stage2'),
+        cc=cc,
+        cxx=InferCXX(cc),
+        cflags=['-pipe'],
+        cxxflags=['-pipe'],
+        ld=ld,
+        use_malloc='mimalloc',
+        runtimes=[
+            'libcxx',
+            'libcxxabi',
+            'libunwind',
+        ],
+        ninja_targets=[
+            'install-cxx',
+            'install-cxxabi',
+            'install-unwind',
+        ],
+    )
+    rc = RB.ConfigAndBuild()
+    if rc != 0:
+        return rc
+    libdir = os.path.join(BS.GetInstall('stage2'), 'lib')
+    B2 = Builder(
+        monorepo=config.monorepo,
+        build_dir=BS.GetBuild('stage2'),
+        install_prefix=BS.GetInstall('stage2'),
+        cc=cc,
+        cxx=InferCXX(cc),
+        cflags=['-pipe'],
+        cxxflags=[
+            '-pipe',
+            '-nostdinc++',
+            '-nostdlib++',
+            '-isystem',
+            os.path.join(BS.GetInstall('stage2'), 'include/c++/v1'),
+        ],
+        ld=ld,
+        ldflags=[
+            '--rtlib=compiler-rt',
+            '--unwindlib=libunwind',
+            '-L{}'.format(libdir),
+            '-lc++',
+            '-lc++abi',
+        ],
+        use_malloc='mimalloc',
+        projects=['clang', 'lld', 'clang-tools-extra'],
+        runtimes=['compiler-rt'],
+        extra_cmake_flags=['-DLLVM_ENABLE_LIBCXX=ON'],
+        ninja_targets=[
+            'install-clang',
+            'install-lld',
+            'install-clangd',
+            'install-clang-tidy',
+            'install-clang-format',
+            'install-clang-resource-headers',
+            'install-runtimes',
+            'install-builtins',
+        ],
+        env={
+            'LD_LIBRARY_PATH': libdir,
+        },
+    )
+    return B2.ConfigAndBuild()
+
+
+class Builder(object):
+
+    def __init__(
+        self,
+        monorepo=None,
+        build_dir=None,
+        install_prefix=None,
+        cmake=shutil.which('cmake'),
+        ninja=shutil.which('ninja'),
+        build_type='Release',
+        werror=False,
+        ccache=False,
+        cc=None,
+        cxx=None,
+        ld=None,
+        cflags=[],
+        cxxflags=[],
+        ldflags=[],
+        projects=[],
+        runtimes=[],
+        extra_cmake_flags=[],
+        config_only=False,
+        jobs=os.cpu_count(),
+        ninja_targets=[],
+        use_malloc=None,
+        enable_asserts=True,
+        env={},
+    ):
+        assert monorepo
+        assert build_dir
+        self.werror = werror
+        self.ccache = ccache
+        self.cmake = cmake
+        self.ninja = ninja
+        self.monorepo = os.path.abspath(monorepo)
+        self.build_dir = os.path.abspath(build_dir)
+        self.install_prefix = os.path.abspath(
+            install_prefix) if install_prefix else None
+        self.cc = os.path.abspath(cc) if cc else None
+        self.cxx = os.path.abspath(cxx) if cxx else None
+        self.ld = os.path.abspath(ld) if ld else None
+        self.cflags = cflags
+        self.cxxflags = cxxflags
+        self.ldflags = ldflags
+        self.projects = projects
+        self.runtimes = runtimes
+        self.extra_cmake_flags = extra_cmake_flags
+        self.ninja_targets = ninja_targets
+        self.build_type = build_type
+        self.config_only = config_only
+        self.jobs = jobs
+        self.use_malloc = use_malloc
+        self.enable_asserts = enable_asserts
+        self.env = env
+
+    def BuildCMakeCommand(self):
+        cmake_command = [
+            self.cmake,
+            '-GNinja',
+            f'-DCMAKE_MAKE_PROGRAM={self.ninja}',
+            '-DLLVM_ENABLE_BINDINGS=OFF',
+            '-DLLVM_ENABLE_ASSERTIONS={}'.format(
+                'TRUE' if self.enable_asserts else 'FALSE'),
+            f'-DCMAKE_BUILD_TYPE={self.build_type}',
+        ]
+        if self.werror:
+            cmake_command.append('-DLLVM_ENABLE_WERROR=ON')
+        if self.ccache:
+            cmake_command.append('-DLLVM_CCACHE_BUILD=ON')
+        if self.install_prefix:
+            cmake_command.append(
+                f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}')
+        if self.use_malloc:
+            self.ldflags.append(f'-l{self.use_malloc}')
+        if self.cc:
+            cmake_command.append(f'-DCMAKE_C_COMPILER={self.cc}')
+        if self.cxx:
+            cmake_command.append(f'-DCMAKE_CXX_COMPILER={self.cxx}')
+        # GCC doesn't support -fuse-ld yet.
+        if self.ld and not self.cc.endswith('gcc'):
+            cmake_command.append(f'-DLLVM_USE_LINKER={self.ld}')
+        if self.cflags:
+            cmake_command.append('-DCMAKE_C_FLAGS={}'.format(
+                shlex.join(self.cflags)))
+        if self.cxxflags:
+            cmake_command.append('-DCMAKE_CXX_FLAGS={}'.format(
+                shlex.join(self.cxxflags)))
+        if self.projects:
+            cmake_command.append('-DLLVM_ENABLE_PROJECTS={}'.format(';'.join(
+                self.projects)))
+        if self.runtimes:
+            cmake_command.append('-DLLVM_ENABLE_RUNTIMES={}'.format(';'.join(
+                self.runtimes)))
+        if self.ldflags:
+            cmake_command.append('-DCMAKE_EXE_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
+            cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
+            cmake_command.append('-DCMAKE_MODULE_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
+        cmake_command.extend(self.extra_cmake_flags)
+        return cmake_command
+
+    # Implicitly reset runtimes.
+    def ConfigAndBuildProjects(self):
+        self.runtimes = []
+        return self.ConfigAndBuild()
+
+    # Implicitly reset projects.
+    def ConfigAndBuildRuntimes(self):
+        self.projects = []
+        err = self.config(os.path.join(self.monorepo, 'runtimes'),
+                          self.build_dir)
+        if err != 0:
+            return err
+        return self.Build()
+
+    def config(self, src_dir, build_dir):
+        cmake_command = self.BuildCMakeCommand()
+        cmake_command.extend(['-S', src_dir])
+        cmake_command.extend(['-B', build_dir])
+        env = os.environ.copy()
+        env.update(self.env)
+        err = subprocess.call(cmake_command, env=env)
+        if err != 0:
+            logging.error(f'cmake failed: {cmake_command}')
+        return err
+
+    def ConfigAndBuild(self):
+        err = self.Config()
+        if self.config_only or err != 0:
+            return err
+        return self.Build()
+
+    def Config(self):
+        return self.config(os.path.join(self.monorepo, 'llvm'), self.build_dir)
+
+    def Build(self):
+        ninja_command = [
+            self.ninja,
+            '-j%d' % self.jobs,
+        ]
+        ninja_command.extend(self.ninja_targets)
+        env = os.environ.copy()
+        env.update(self.env)
+        err = subprocess.call(ninja_command, cwd=self.build_dir, env=env)
+        if err != 0:
+            logging.error(f'ninja failed: {ninja_command}')
+        return err
+
+
+class RuntimeBuilder(Builder):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def Config(self):
+        return self.config(os.path.join(self.monorepo, 'runtimes'),
+                           self.build_dir)
+
+
+class BuildSpace(object):
+
+    def __init__(self, root):
+        self.root = os.path.abspath(root)
+
+    def Clear(self):
+        shutil.rmtree(self.root)
+
+    def _GetDir(self, path):
+        return os.path.join(self.root, path)
+
+    def _AddDir(self, path):
+        os.makedirs(self._GetDir(path), exist_ok=True)
+
+    def _RemoveDir(self, path):
+        if os.path.exists(self._GetDir(path)):
+            shutil.rmtree(self._GetDir(path))
+
+    def GetBuild(self, name):
+        self._AddDir(f'build/{name}')
+        return self._GetDir(f'build/{name}')
+
+    def GetInstall(self, name):
+        self._AddDir(f'install/{name}')
+        return self._GetDir(f'install/{name}')
+
+    def RemoveBuild(self, name):
+        self._RemoveDir(f'build/{name}')
+
+    def RemoveInstall(self, name):
+        self._RemoveDir(f'install/{name}')
+
+
+class StageBuilder(object):
+
+    def __init__(self, config):
+        pass
+
+    def Build(self):
+        pass
+
+
+Profiles = {
+    'dev': BuildForDev,
+    'debug': BuildForDebug,
+    'staging': BuildForStaging,
+    'clang': BuildClangProduct,
+}
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Build Clang/LLVM using different profile.')
+    parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
+    parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
+    parser.add_argument('--cc', default=shutil.which('clang'))
+    parser.add_argument('--ld', default=shutil.which('ld.lld'))
+    parser.add_argument('--ccache', default=False, action='store_true')
+    parser.add_argument('-j', dest='jobs', type=int, default=os.cpu_count())
+    parser.add_argument('--monorepo', required=True)
+    parser.add_argument('--build_dir', required=True)
+    parser.add_argument('--install_prefix')
+    parser.add_argument('--werror', default=False, action='store_true')
+    parser.add_argument('-p', dest='profile', type=str, default='dev')
+    config = parser.parse_args()
+    if config.profile in Profiles:
+        return Profiles[config.profile](config)
+    logging.error(f"No builder for {config.profile}")
+    return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
