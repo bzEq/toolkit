@@ -34,6 +34,14 @@ def GetRuntimeTargets():
     return ['install-cxx', 'install-cxxabi', 'install-unwind']
 
 
+def GetClangToolsExtraTargets():
+    return [
+        'install-clangd',
+        'install-clang-format',
+        'install-clang-tidy',
+    ]
+
+
 def InferCXX(cc):
     if cc.endswith('gcc'):
         return cc[:-len('gcc')] + 'g++'
@@ -154,7 +162,7 @@ def BuildClang1(config):
         cxxflags=['-pipe'],
         ld=ld,
         projects=['clang', 'lld'],
-        runtimes=['compiler-rt', 'libcxx', 'libcxxabi', 'libunwind'],
+        runtimes=['compiler-rt'] + GetRuntimes(),
         ninja_targets=GetMinimalToolchainTargets() + GetRuntimeTargets(),
     )
     return B.ConfigAndBuild()
@@ -380,14 +388,8 @@ def Bootstrap(config, stage):
                 # Also build runtimes used by compiler users rather than
                 # compiler its self.
                 runtimes.extend(GetRuntimes())
-                ninja_targets.extend([
-                    'install-clangd',
-                    'install-clang-format',
-                    'install-clang-tidy',
-                    'install-cxx',
-                    'install-cxxabi',
-                    'install-unwind',
-                ])
+                ninja_targets.extend(GetClangToolsExtraTargets() +
+                                     GetRuntimeTargets())
         # Build runtimes by stage{i} driver.
         RB = RuntimeBuilder(
             jobs=config.jobs,
