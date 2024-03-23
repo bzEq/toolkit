@@ -380,7 +380,6 @@ def Bootstrap(config, stage):
         extra_cmake_flags = [
             '-DCMAKE_POSITION_INDEPENDENT_CODE=On',
         ]
-        env = {}
         projects = ['clang', 'lld']
         runtimes = ['compiler-rt']
         if i > 1:
@@ -416,7 +415,6 @@ def Bootstrap(config, stage):
             ldflags=ldflags + GetLdPathFlag(cc, ld),
             runtimes=GetRuntimes(),
             use_malloc='mimalloc',
-            env=env,
             ninja_targets=GetRuntimeTargets(),
             extra_cmake_flags=extra_cmake_flags + [
                 '-DLIBCXX_USE_COMPILER_RT=TRUE',
@@ -431,7 +429,7 @@ def Bootstrap(config, stage):
         libdir = os.path.join(BS.GetInstall(f'stage{i}'), 'lib')
         # Currently, binaries are in build tree, not install tree, so RUNPATH may be
         # not pointing the libdir in need.
-        env.update({'LD_LIBRARY_PATH': libdir})
+        env = {'LD_LIBRARY_PATH': libdir}
         # extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
         B = Builder(
             jobs=config.jobs,
