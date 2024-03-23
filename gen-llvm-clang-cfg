@@ -12,9 +12,13 @@ EOF
 cat > llvm-clang++.cfg << EOF
 -pipe
 --ld-path=/opt/clang/bin/ld.lld
+-nostdinc++
+-nostdlib++
+-isystem /opt/clang/include/c++/v1
 -Wl,-rpath,/opt/clang/lib/x86_64-unknown-linux-gnu
 -rtlib=compiler-rt
 -unwindlib=libunwind
 -stdlib=libc++
+-lc++
 EOF
 
