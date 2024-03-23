@@ -77,7 +77,7 @@ def BuildForStaging(config):
         build_dir=BS.GetBuild('stage2'),
         install_prefix=BS.GetInstall('stage2'),
         cc=cc,
-        cxx=InferCXX(config.cc),
+        cxx=InferCXX(cc),
         cflags=[
             '-pipe',
             '-march=native',
