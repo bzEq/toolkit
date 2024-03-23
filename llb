@@ -427,9 +427,6 @@ def Bootstrap(config, stage):
         if rc != 0:
             return rc
         libdir = os.path.join(BS.GetInstall(f'stage{i}'), 'lib')
-        # Currently, binaries are in build tree, not install tree, so RUNPATH may be
-        # not pointing the libdir in need.
-        env = {'LD_LIBRARY_PATH': libdir}
         # extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
         B = Builder(
             jobs=config.jobs,
@@ -457,7 +454,9 @@ def Bootstrap(config, stage):
             runtimes=runtimes,
             projects=projects,
             use_malloc='mimalloc',
-            env=env,
+            # Currently, binaries are in build tree, not install tree, so RUNPATH may be
+            # not pointing the libdir in need.
+            env={'LD_LIBRARY_PATH': libdir},
             ninja_targets=ninja_targets,
             extra_cmake_flags=extra_cmake_flags,
         )
