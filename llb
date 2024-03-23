@@ -14,6 +14,12 @@ import logging
 from copy import copy
 
 
+def GetLdPathFlag(cc, ld):
+    if not cc.endswith('clang'):
+        return []
+    return [f'--ld-path={ld}']
+
+
 def GetMinimalToolchainTargets():
     return [
         'install-llvm-ar',
@@ -407,9 +413,7 @@ def Bootstrap(config, stage):
                 '-march=native',
             ],
             ld=ld,
-            ldflags=[
-                f'--ld-path={ld}',
-            ],
+            ldflags=ldflags + GetLdPathFlag(cc, ld),
             runtimes=GetRuntimes(),
             use_malloc='mimalloc',
             env=env,
@@ -428,21 +432,6 @@ def Bootstrap(config, stage):
         # Currently, binaries are in build tree, not install tree, so RUNPATH may be
         # not pointing the libdir in need.
         env.update({'LD_LIBRARY_PATH': libdir})
-        cxxflags.extend([
-            '-nostdinc++',
-            '-nostdlib++',
-            '-isystem',
-            os.path.join(BS.GetInstall(f'stage{i}'), 'include/c++/v1'),
-        ])
-        ldflags.extend([
-            f'--ld-path={ld}',
-            # Link against the runtimes we just built.
-            '-L{}'.format(libdir),
-            '--rtlib=compiler-rt',
-            '--unwindlib=libunwind',
-            '--stdlib=libc++',
-            '-lc++',
-        ])
         # extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
         B = Builder(
             jobs=config.jobs,
@@ -452,9 +441,21 @@ def Bootstrap(config, stage):
             cc=cc,
             cxx=cxx,
             cflags=cflags,
-            cxxflags=cxxflags,
+            cxxflags=cxxflags + [
+                '-nostdinc++',
+                '-nostdlib++',
+                '-isystem',
+                os.path.join(BS.GetInstall(f'stage{i}'), 'include/c++/v1'),
+            ],
             ld=ld,
-            ldflags=ldflags,
+            ldflags=ldflags + GetLdPathFlag(cc, ld) + [
+                # Link against the runtimes we just built.
+                '-L{}'.format(libdir),
+                '--rtlib=compiler-rt',
+                '--unwindlib=libunwind',
+                '--stdlib=libc++',
+                '-lc++',
+            ],
             runtimes=runtimes,
             projects=projects,
             use_malloc='mimalloc',
