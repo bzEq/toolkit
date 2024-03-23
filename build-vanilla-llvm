@@ -7,7 +7,7 @@ LLVM_BASE=${LLVM_BASE:-"/build/vanilla-llvm"}
 LBH=${DIR}/lbh
 LLB=${DIR}/llb
 
-! [[ -d ${LLVM_BASE}/build ]] && mkdir ${LLVM_BASE}/staging
+! [[ -d ${LLVM_BASE}/staging ]] && mkdir ${LLVM_BASE}/staging
 
 cd ${LLVM_BASE}/llvm-project
 git checkout main
