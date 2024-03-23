@@ -118,6 +118,8 @@ class Builder(object):
                 'TRUE' if self.enable_asserts else 'FALSE'),
             f'-DCMAKE_BUILD_TYPE={self.build_type}',
         ]
+        if self.werror:
+            cmake_command.append('-LLVM_ENABLE_WERROR=ON')
         if self.install_prefix:
             cmake_command.append(
                 f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}')
