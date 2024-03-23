@@ -315,6 +315,7 @@ def BuildForDev(options):
         options.monorepo,
         options.build_dir,
         options.install_prefix,
+        cmake=options.cmake_binary,
         build_type=options.build_type,
         cc=options.clang,
         cxx=InferCXX(options.clang),
