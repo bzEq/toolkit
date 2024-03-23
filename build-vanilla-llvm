@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+set -x
+
+DIR=$(dirname "$0")
+LLVM_BASE=${LLVM_BASE:-"/build/vanilla-llvm"}
+LBH=${DIR}/lbh
+LLB=${DIR}/llb
+
+! [[ -d ${LLVM_BASE}/build ]] && mkdir ${LLVM_BASE}/staging
+
+cd ${LLVM_BASE}/llvm-project
+git checkout main
+${LBH} repo
+${LLB} -p staging --monorepo ${LLVM_BASE}/llvm-project --build_dir ${LLVM_BASE}/staging

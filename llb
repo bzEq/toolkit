@@ -11,6 +11,26 @@ import shlex
 import shutil
 import tempfile
 import logging
+from copy import copy
+
+
+def GetMinimalToolchainTargets():
+    return [
+        'install-llvm-ar',
+        'install-clang',
+        'install-lld',
+        'install-clang-resource-headers',
+        'install-runtimes',
+        'install-builtins',
+    ]
+
+
+def GetRuntimes():
+    return ['libcxx', 'libcxxabi', 'libunwind']
+
+
+def GetRuntimeTargets():
+    return ['install-cxx', 'install-cxxabi', 'install-unwind']
 
 
 def InferCXX(cc):
@@ -24,23 +44,25 @@ def InferCXX(cc):
 def BuildForStaging(config):
     BS = BuildSpace(config.build_dir)
     B1 = Builder(
+        jobs=config.jobs,
         monorepo=config.monorepo,
         build_dir=BS.GetBuild('stage1'),
         install_prefix=BS.GetInstall('stage1'),
         cc=config.cc,
         cxx=InferCXX(config.cc),
-        cflags=['-pipe'],
-        cxxflags=['-pipe'],
+        cflags=[
+            '-pipe',
+            '-march=native',
+        ],
+        cxxflags=[
+            '-pipe',
+            '-march=native',
+        ],
         ld=config.ld,
+        use_malloc='mimalloc',
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
-        ninja_targets=[
-            'install-clang',
-            'install-lld',
-            'install-clang-resource-headers',
-            'install-runtimes',
-            'install-builtins',
-        ],
+        ninja_targets=GetMinimalToolchainTargets(),
     )
     rc = B1.ConfigAndBuild()
     if rc != 0:
@@ -49,11 +71,20 @@ def BuildForStaging(config):
     ld = os.path.join(BS.GetInstall('stage1'), 'bin/ld.lld')
     BS.RemoveBuild('stage2')
     B2 = Builder(
+        jobs=config.jobs,
         monorepo=config.monorepo,
         build_dir=BS.GetBuild('stage2'),
         install_prefix=BS.GetInstall('stage2'),
         cc=cc,
         cxx=InferCXX(config.cc),
+        cflags=[
+            '-pipe',
+            '-march=native',
+        ],
+        cxxflags=[
+            '-pipe',
+            '-march=native',
+        ],
         ld=ld,
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
@@ -74,8 +105,14 @@ def BuildForDev(config):
         ccache=True,
         cc=config.cc,
         cxx=InferCXX(config.cc),
-        cflags=['-pipe'],
-        cxxflags=['-pipe'],
+        cflags=[
+            '-pipe',
+            '-march=native',
+        ],
+        cxxflags=[
+            '-pipe',
+            '-march=native',
+        ],
         ld=config.ld,
         use_malloc='mimalloc',
         projects=['clang', 'lld'],
@@ -100,12 +137,13 @@ def BuildForDebug(config):
             config_only=True).ConfigAndBuild()
 
 
-def BuildClangProduct(config):
+def BuildClang1(config):
     BS = BuildSpace(config.build_dir)
     # Force to use GNU toolchain.
     cc = shutil.which('gcc')
     ld = shutil.which('ld')
-    B1 = Builder(
+    B = Builder(
+        jobs=config.jobs,
         monorepo=config.monorepo,
         build_dir=BS.GetBuild('stage1'),
         install_prefix=BS.GetInstall('stage1'),
@@ -114,89 +152,21 @@ def BuildClangProduct(config):
         cflags=['-pipe'],
         cxxflags=['-pipe'],
         ld=ld,
-        use_malloc='mimalloc',
         projects=['clang', 'lld'],
-        runtimes=['compiler-rt'],
+        runtimes=['compiler-rt', 'libcxx', 'libcxxabi', 'libunwind'],
         ninja_targets=[
+            'install-llvm-ar',
             'install-clang',
             'install-lld',
             'install-clang-resource-headers',
             'install-runtimes',
             'install-builtins',
-        ],
-    )
-    rc = B1.ConfigAndBuild()
-    if rc != 0:
-        return rc
-    cc = os.path.join(BS.GetInstall('stage1'), 'bin/clang')
-    ld = os.path.join(BS.GetInstall('stage1'), 'bin/ld.lld')
-    RB = RuntimeBuilder(
-        monorepo=config.monorepo,
-        build_dir=BS.GetBuild('stage1-runtimes'),
-        # Theorectically, runtimes built by stage1 and runtimes built by stage2 are binary level identical.
-        install_prefix=BS.GetInstall('stage2'),
-        cc=cc,
-        cxx=InferCXX(cc),
-        cflags=['-pipe'],
-        cxxflags=['-pipe'],
-        ld=ld,
-        use_malloc='mimalloc',
-        runtimes=[
-            'libcxx',
-            'libcxxabi',
-            'libunwind',
-        ],
-        ninja_targets=[
             'install-cxx',
             'install-cxxabi',
             'install-unwind',
         ],
     )
-    rc = RB.ConfigAndBuild()
-    if rc != 0:
-        return rc
-    libdir = os.path.join(BS.GetInstall('stage2'), 'lib')
-    B2 = Builder(
-        monorepo=config.monorepo,
-        build_dir=BS.GetBuild('stage2'),
-        install_prefix=BS.GetInstall('stage2'),
-        cc=cc,
-        cxx=InferCXX(cc),
-        cflags=['-pipe'],
-        cxxflags=[
-            '-pipe',
-            '-nostdinc++',
-            '-nostdlib++',
-            '-isystem',
-            os.path.join(BS.GetInstall('stage2'), 'include/c++/v1'),
-        ],
-        ld=ld,
-        ldflags=[
-            '--rtlib=compiler-rt',
-            '--unwindlib=libunwind',
-            '-L{}'.format(libdir),
-            '-lc++',
-            '-lc++abi',
-        ],
-        use_malloc='mimalloc',
-        projects=['clang', 'lld', 'clang-tools-extra'],
-        runtimes=['compiler-rt'],
-        extra_cmake_flags=['-DLLVM_ENABLE_LIBCXX=ON'],
-        ninja_targets=[
-            'install-clang',
-            'install-lld',
-            'install-clangd',
-            'install-clang-tidy',
-            'install-clang-format',
-            'install-clang-resource-headers',
-            'install-runtimes',
-            'install-builtins',
-        ],
-        env={
-            'LD_LIBRARY_PATH': libdir,
-        },
-    )
-    return B2.ConfigAndBuild()
+    return B.ConfigAndBuild()
 
 
 class Builder(object):
@@ -221,7 +191,7 @@ class Builder(object):
         runtimes=[],
         extra_cmake_flags=[],
         config_only=False,
-        jobs=os.cpu_count(),
+        jobs=min(8, os.cpu_count()),
         ninja_targets=[],
         use_malloc=None,
         enable_asserts=True,
@@ -302,21 +272,7 @@ class Builder(object):
         cmake_command.extend(self.extra_cmake_flags)
         return cmake_command
 
-    # Implicitly reset runtimes.
-    def ConfigAndBuildProjects(self):
-        self.runtimes = []
-        return self.ConfigAndBuild()
-
-    # Implicitly reset projects.
-    def ConfigAndBuildRuntimes(self):
-        self.projects = []
-        err = self.config(os.path.join(self.monorepo, 'runtimes'),
-                          self.build_dir)
-        if err != 0:
-            return err
-        return self.Build()
-
-    def config(self, src_dir, build_dir):
+    def _Config(self, src_dir, build_dir):
         cmake_command = self.BuildCMakeCommand()
         cmake_command.extend(['-S', src_dir])
         cmake_command.extend(['-B', build_dir])
@@ -334,7 +290,8 @@ class Builder(object):
         return self.Build()
 
     def Config(self):
-        return self.config(os.path.join(self.monorepo, 'llvm'), self.build_dir)
+        return self._Config(os.path.join(self.monorepo, 'llvm'),
+                            self.build_dir)
 
     def Build(self):
         ninja_command = [
@@ -356,8 +313,8 @@ class RuntimeBuilder(Builder):
         super().__init__(*args, **kwargs)
 
     def Config(self):
-        return self.config(os.path.join(self.monorepo, 'runtimes'),
-                           self.build_dir)
+        return self._Config(os.path.join(self.monorepo, 'runtimes'),
+                            self.build_dir)
 
 
 class BuildSpace(object):
@@ -393,20 +350,142 @@ class BuildSpace(object):
         self._RemoveDir(f'install/{name}')
 
 
-class StageBuilder(object):
+def Bootstrap(config, stage):
+    if stage < 1:
+        return 1
+    if stage > 3:
+        stage = 3
+    cc = shutil.which(config.cc)
+    cxx = InferCXX(cc)
+    ld = shutil.which(config.ld)
+    BS = BuildSpace(config.build_dir)
+    for i in range(1, stage + 1):
+        ninja_targets = GetMinimalToolchainTargets()
+        ldflags = []
+        cflags = [
+            '-pipe',
+            '-march=native',
+        ]
+        cxxflags = [
+            '-pipe',
+            '-march=native',
+        ]
+        # CMake does not set the -fpic option when building static libraries.
+        # See https://github.com/gabime/spdlog/issues/1405.
+        extra_cmake_flags = [
+            '-DCMAKE_POSITION_INDEPENDENT_CODE=On',
+        ]
+        env = {}
+        projects = ['clang', 'lld']
+        runtimes = ['compiler-rt']
+        if i > 1:
+            install_prefix = BS.GetInstall(f'stage{i-1}')
+            cc = os.path.join(install_prefix, 'bin/clang')
+            cxx = os.path.join(install_prefix, 'bin/clang++')
+            ld = os.path.join(install_prefix, 'bin/ld.lld')
+            extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+            if i == stage:
+                projects.extend(['clang-tools-extra'])
+                # Also build runtimes used by compiler users rather than
+                # compiler its self.
+                runtimes.extend(GetRuntimes())
+                ninja_targets.extend([
+                    'install-clangd',
+                    'install-clang-format',
+                    'install-clang-tidy',
+                    'install-cxx',
+                    'install-cxxabi',
+                    'install-unwind',
+                ])
+        # Build runtimes by stage{i} driver.
+        RB = RuntimeBuilder(
+            jobs=config.jobs,
+            monorepo=config.monorepo,
+            build_dir=BS.GetBuild(f'stage{i}-runtimes'),
+            install_prefix=BS.GetInstall(f'stage{i}'),
+            cc=cc,
+            cxx=cxx,
+            cflags=[
+                '-pipe',
+                '-march=native',
+            ],
+            cxxflags=[
+                '-pipe',
+                '-march=native',
+            ],
+            ld=ld,
+            runtimes=GetRuntimes(),
+            use_malloc='mimalloc',
+            env=env,
+            ninja_targets=GetRuntimeTargets(),
+            extra_cmake_flags=copy(extra_cmake_flags) + [
+                '-DLIBCXX_USE_COMPILER_RT=TRUE',
+                '-DLIBCXXABI_USE_COMPILER_RT=TRUE',
+                '-DLIBUNWIND_USE_COMPILER_RT=TRUE',
+                '-DLIBCXXABI_USE_LLVM_UNWINDER=TRUE',
+            ],
+        )
+        rc = RB.ConfigAndBuild()
+        if rc != 0:
+            return rc
+        libdir = os.path.join(BS.GetInstall(f'stage{i}'), 'lib')
+        # Currently, binaries are in build tree, not install tree, so RUNPATH may be
+        # not pointing the libdir in need.
+        env.update({'LD_LIBRARY_PATH': libdir})
+        cxxflags.extend([
+            '-nostdinc++',
+            '-nostdlib++',
+            '-isystem',
+            os.path.join(BS.GetInstall(f'stage{i}'), 'include/c++/v1'),
+        ])
+        ldflags.extend([
+            # Link against the runtimes we just built.
+            '-L{}'.format(libdir),
+            '--rtlib=compiler-rt',
+            '--unwindlib=libunwind',
+            '-lc++',
+            '-lc++abi',
+        ])
+        extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
+        B = Builder(
+            jobs=config.jobs,
+            monorepo=config.monorepo,
+            build_dir=BS.GetBuild(f'stage{i}'),
+            install_prefix=BS.GetInstall(f'stage{i}'),
+            cc=cc,
+            cxx=cxx,
+            cflags=cflags,
+            cxxflags=cxxflags,
+            ld=ld,
+            ldflags=ldflags,
+            runtimes=runtimes,
+            projects=projects,
+            use_malloc='mimalloc',
+            env=env,
+            ninja_targets=ninja_targets,
+            extra_cmake_flags=extra_cmake_flags,
+        )
+        rc = B.ConfigAndBuild()
+        if rc != 0:
+            return rc
+    return 0
 
-    def __init__(self, config):
-        pass
 
-    def Build(self):
-        pass
+def Bootstrap2(config):
+    return Bootstrap(config, 2)
+
+
+def Bootstrap3(config):
+    return Bootstrap(config, 3)
 
 
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
     'staging': BuildForStaging,
-    'clang': BuildClangProduct,
+    'clang1': BuildClang1,
+    'clang2': Bootstrap2,
+    'clang3': Bootstrap3,
 }
 
 
