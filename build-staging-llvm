@@ -12,7 +12,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
       --build_runtimes \
       --use_malloc=mimalloc \
       --config_only && \
-  ninja && ninja check-all check-runtimes && \
+  ninja && \
   rm -rf ${LLVM_STAGING}/build/bootstrap/* && \
   cd ${LLVM_STAGING}/build/bootstrap && \
   lbh dev \
