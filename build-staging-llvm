@@ -46,6 +46,7 @@ cmake -GNinja \
       -DCMAKE_C_COMPILER=${LLVM_STAGING}/install/stage1/bin/clang \
       -DCMAKE_CXX_COMPILER=${LLVM_STAGING}/install/stage1/bin/clang++ \
       -DCMAKE_CXX_FLAGS="-nostdinc++ -nostdlib++ -isystem ${LLVM_STAGING}/install/stage1/include/c++/v1" \
+      -DCMAKE_MODULE_LINKER_FLAGS="--ld-path=${LLVM_STAGING}/install/stage1/bin/ld.lld -rtlib=compiler-rt -unwindlib=libunwind -L${LLVM_STAGING}/install/stage1/lib -lc++ -lc++abi -Wl,-rpath,${LLVM_STAGING}/install/stage1/lib" \
       -DCMAKE_SHARED_LINKER_FLAGS="--ld-path=${LLVM_STAGING}/install/stage1/bin/ld.lld -rtlib=compiler-rt -unwindlib=libunwind -L${LLVM_STAGING}/install/stage1/lib -lc++ -lc++abi -Wl,-rpath,${LLVM_STAGING}/install/stage1/lib" \
       -DCMAKE_EXE_LINKER_FLAGS="--ld-path=${LLVM_STAGING}/install/stage1/bin/ld.lld -rtlib=compiler-rt -unwindlib=libunwind -L${LLVM_STAGING}/install/stage1/lib -lc++ -lc++abi -Wl,-rpath,${LLVM_STAGING}/install/stage1/lib" \
       -S ${LLVM_STAGING}/llvm-project/llvm \
