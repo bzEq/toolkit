@@ -66,6 +66,7 @@ class Builder(object):
         cmake=shutil.which('cmake'),
         ninja=shutil.which('ninja'),
         build_type='Release',
+        werror=False,
         cc=None,
         cxx=None,
         ld=None,
@@ -206,6 +207,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--use_malloc', default=None)
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
+    parser.add_argument('--werror', default=False, action='store_true')
 
 
 def BuildProduct(config):
@@ -317,6 +319,7 @@ def BuildForDev(options):
         options.install_prefix,
         cmake=options.cmake_binary,
         build_type=options.build_type,
+        werror=options.werror,
         cc=options.clang,
         cxx=InferCXX(options.clang),
         ld=options.lld,

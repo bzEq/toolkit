@@ -16,6 +16,7 @@ cd ${LLVM_STAGING}/llvm-project && git checkout main && \
   rm -rf ${LLVM_STAGING}/build/bootstrap/* && \
   cd ${LLVM_STAGING}/build/bootstrap && \
   lbh dev \
+      --werror \
       --monorepo ${LLVM_STAGING}/llvm-project \
       --build_dir $PWD \
       --clang ../default/bin/clang \
