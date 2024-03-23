@@ -154,6 +154,8 @@ class Builder(object):
                 shlex.join(self.ldflags)))
             cmake_command.append('-DCMAKE_SHARED_LINKER_FLAGS={}'.format(
                 shlex.join(self.ldflags)))
+            cmake_command.append('-DCMAKE_MODULE_LINKER_FLAGS={}'.format(
+                shlex.join(self.ldflags)))
         cmake_command.extend(self.extra_cmake_flags)
         return cmake_command
 
