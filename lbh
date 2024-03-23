@@ -67,6 +67,7 @@ class Builder(object):
         ninja=shutil.which('ninja'),
         build_type='Release',
         werror=False,
+        ccache=False,
         cc=None,
         cxx=None,
         ld=None,
@@ -120,6 +121,8 @@ class Builder(object):
         ]
         if self.werror:
             cmake_command.append('-LLVM_ENABLE_WERROR=ON')
+        if self.ccache:
+            cmake_command.append('-LLVM_CCACHE_BUILD=ON')
         if self.install_prefix:
             cmake_command.append(
                 f'-DCMAKE_INSTALL_PREFIX={self.install_prefix}')
@@ -210,6 +213,7 @@ def AddCommonArguments(parser):
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
     parser.add_argument('--werror', default=False, action='store_true')
+    parser.add_argument('--ccache', default=False, action='store_true')
 
 
 def BuildProduct(config):
@@ -322,6 +326,7 @@ def BuildForDev(options):
         cmake=options.cmake_binary,
         build_type=options.build_type,
         werror=options.werror,
+        ccache=options.ccache,
         cc=options.clang,
         cxx=InferCXX(options.clang),
         ld=options.lld,
