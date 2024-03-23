@@ -17,6 +17,7 @@ from copy import copy
 def GetMinimalToolchainTargets():
     return [
         'install-llvm-ar',
+        'install-llvm-ranlib',
         'install-clang',
         'install-lld',
         'install-clang-resource-headers',
@@ -154,17 +155,7 @@ def BuildClang1(config):
         ld=ld,
         projects=['clang', 'lld'],
         runtimes=['compiler-rt', 'libcxx', 'libcxxabi', 'libunwind'],
-        ninja_targets=[
-            'install-llvm-ar',
-            'install-clang',
-            'install-lld',
-            'install-clang-resource-headers',
-            'install-runtimes',
-            'install-builtins',
-            'install-cxx',
-            'install-cxxabi',
-            'install-unwind',
-        ],
+        ninja_targets=GetMinimalToolchainTargets() + GetRuntimeTargets(),
     )
     return B.ConfigAndBuild()
 
