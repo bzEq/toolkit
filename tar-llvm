@@ -2,7 +2,7 @@
 
 set -e
 
-LLVM_DEV=${LLVM_DEV:-"/build/llvm-dev/llvm-project"}
+LLVM_SRC=${LLVM_DEV:-"/build/llvm-dev/llvm-project"}
 REV=${1:-main}
 COMMITISH="llvmorg-${REV}"
 if [[ ${REV} =~ "main" ]]; then
@@ -10,6 +10,9 @@ if [[ ${REV} =~ "main" ]]; then
 fi
 
 export XZ_OPT='-T0'
+# Please ensure `tar.xz.command`` is configured by
+# `git config tar.xz.command "xz -z -T0"` or
+# `git config --global tar.xz.command "xz -z -T0"``
 
 cd ${LLVM_DEV} && \
   git archive -o "/build/llvm-${REV}.tar.xz" \
