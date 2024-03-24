@@ -199,7 +199,7 @@ class Builder(object):
         jobs=min(8, os.cpu_count()),
         ninja_targets=[],
         use_malloc=None,
-        enable_asserts=True,
+        enable_assert=True,
         env={},
     ):
         assert monorepo
@@ -226,7 +226,7 @@ class Builder(object):
         self.config_only = config_only
         self.jobs = jobs
         self.use_malloc = use_malloc
-        self.enable_asserts = enable_asserts
+        self.enable_assert = enable_assert
         self.env = env
 
     def BuildCMakeCommand(self):
@@ -236,7 +236,7 @@ class Builder(object):
             f'-DCMAKE_MAKE_PROGRAM={self.ninja}',
             '-DLLVM_ENABLE_BINDINGS=OFF',
             '-DLLVM_ENABLE_ASSERTIONS={}'.format(
-                'TRUE' if self.enable_asserts else 'FALSE'),
+                'TRUE' if self.enable_assert else 'FALSE'),
             f'-DCMAKE_BUILD_TYPE={self.build_type}',
         ]
         if self.werror:
@@ -397,6 +397,8 @@ def Bootstrap(config, stage):
                                      GetRuntimeTargets())
         # Build runtimes by stage{i} driver.
         RB = RuntimeBuilder(
+            # To compare stage2 and stage3 binaries, assertion must be disabled.
+            enable_assert=False,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}-runtimes'),
@@ -427,8 +429,8 @@ def Bootstrap(config, stage):
         if rc != 0:
             return rc
         libdir = os.path.join(BS.GetInstall(f'stage{i}'), 'lib')
-        # extra_cmake_flags.append('-DLLVM_ENABLE_LIBCXX=ON')
         B = Builder(
+            enable_assert=False,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}'),
