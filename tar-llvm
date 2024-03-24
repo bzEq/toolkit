@@ -2,7 +2,7 @@
 
 set -e
 
-LLVM_SRC=${LLVM_DEV:-"/build/llvm-dev/llvm-project"}
+LLVM_SRC=${LLVM_SRC:-"/build/llvm-dev/llvm-project"}
 REV=${1:-main}
 COMMITISH="llvmorg-${REV}"
 if [[ ${REV} =~ "main" ]]; then
@@ -14,6 +14,6 @@ export XZ_OPT='-T0'
 # `git config tar.xz.command "xz -z -T0"` or
 # `git config --global tar.xz.command "xz -z -T0"``
 
-cd ${LLVM_DEV} && \
+cd ${LLVM_SRC} && \
   git archive -o "/build/llvm-${REV}.tar.xz" \
       "${COMMITISH}" --prefix="llvm-${REV}/"
