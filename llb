@@ -74,6 +74,7 @@ def BuildForStaging(config):
             '-march=native',
         ],
         ld=config.ld,
+        ldflags=GetLdPathFlag(config.cc, config.ld),
         use_malloc='mimalloc',
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
@@ -101,6 +102,7 @@ def BuildForStaging(config):
             '-march=native',
         ],
         ld=ld,
+        ldflags=GetLdPathFlag(cc, ld),
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
         ninja_targets=[
@@ -129,6 +131,7 @@ def BuildForDev(config):
             '-march=native',
         ],
         ld=config.ld,
+        ldflags=GetLdPathFlag(config.cc, config.ld),
         use_malloc='mimalloc',
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
@@ -147,6 +150,7 @@ def BuildForDebug(config):
             cflags=['-pipe'],
             cxxflags=['-pipe'],
             ld=config.ld,
+            ldflags=GetLdPathFlag(config.cc, config.ld),
             projects=['clang;lld'],
             runtimes=['compiler-rt'],
             config_only=True).ConfigAndBuild()
