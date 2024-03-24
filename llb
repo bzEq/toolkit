@@ -365,8 +365,8 @@ def Bootstrap(config, stage):
     for i in range(1, stage + 1):
         ninja_targets = GetMinimalToolchainTargets()
         ldflags = []
-        cflags = GetDefaultFlags(),
-        cxxflags = GetDefaultFlags(),
+        cflags = GetDefaultFlags()
+        cxxflags = GetDefaultFlags()
         # CMake does not set the -fpic option when building static libraries.
         # See https://github.com/gabime/spdlog/issues/1405.
         extra_cmake_flags = [
