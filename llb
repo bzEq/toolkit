@@ -16,7 +16,7 @@ from copy import copy
 
 
 def GetRuntimesLdFlags():
-    # libc++ uses libc++abi and libunwind beging built.
+    # libc++ uses libc++abi and libunwind being built.
     return ['-Wl,-rpath,$ORIGIN']
 
 
