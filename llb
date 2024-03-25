@@ -393,7 +393,10 @@ def Bootstrap(config, stage):
             cc = os.path.join(install_prefix, 'bin/clang')
             cxx = os.path.join(install_prefix, 'bin/clang++')
             ld = os.path.join(install_prefix, 'bin/ld.lld')
+        # Enable LTO if using clang and lld combination.
+        if cc.endswith('clang') and ld.endswith('lld'):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+        # Build additional libraries and tools at the last stage.
         if i == stage:
             projects.extend(['clang-tools-extra'])
             # Also build runtimes used by compiler users rather than
