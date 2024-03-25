@@ -477,7 +477,7 @@ def Bootstrap3(config):
 
 def BuildRuntimes(config):
     extra_cmake_flags = []
-    if config.cc.endswith('clang'):
+    if config.cc.endswith('clang') and config.ld.endswith('lld'):
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     return RuntimeBuilder(
         enable_assert=False,
