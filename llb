@@ -400,7 +400,10 @@ def Bootstrap(config, stage):
             cflags=GetDefaultFlags(),
             cxxflags=GetDefaultFlags(),
             ld=ld,
-            ldflags=ldflags + GetLdPathFlags(cc, ld),
+            ldflags=ldflags + GetLdPathFlags(cc, ld) + [
+                # libc++ uses libc++abi and libunwind beging built.
+                '-Wl,-rpath,$ORIGIN',
+            ],
             runtimes=GetRuntimes(),
             use_malloc='mimalloc',
             ninja_targets=GetRuntimeTargets(),
