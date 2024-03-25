@@ -475,6 +475,29 @@ def Bootstrap3(config):
     return Bootstrap(config, 3)
 
 
+def BuildRuntimes(config):
+    extra_cmake_flags = []
+    if config.cc.endswith('clang'):
+        extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+    return RuntimeBuilder(
+        enable_assert=False,
+        jobs=config.jobs,
+        monorepo=config.monorepo,
+        build_dir=config.build_dir,
+        install_prefix=config.install_prefix,
+        cc=config.cc,
+        cxx=InferCXX(config.cc),
+        cflags=GetDefaultFlags(),
+        cxxflags=GetDefaultFlags(),
+        ld=config.ld,
+        ldflags=GetLdPathFlags(config.cc, config.ld) + GetRuntimesLdFlags(),
+        runtimes=GetRuntimes(),
+        use_malloc='mimalloc',
+        ninja_targets=GetRuntimeTargets(),
+        extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
+    ).ConfigAndBuild()
+
+
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
@@ -483,6 +506,7 @@ Profiles = {
     'clang1': Bootstrap1,
     'clang2': Bootstrap2,
     'clang3': Bootstrap3,
+    'runtimes': BuildRuntimes,
 }
 
 
