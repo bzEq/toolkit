@@ -504,7 +504,7 @@ Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
     'staging': BuildForStaging,
-    'gcc1': BuildWithGCC,
+    'gcc': BuildWithGCC,
     'clang1': Bootstrap1,
     'clang2': Bootstrap2,
     'clang3': Bootstrap3,
