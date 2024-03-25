@@ -15,6 +15,20 @@ import platform
 from copy import copy
 
 
+def GetRuntimesLdFlags():
+    # libc++ uses libc++abi and libunwind beging built.
+    return ['-Wl,-rpath,$ORIGIN']
+
+
+def GetRuntimesCmakeFlags():
+    return [
+        '-DLIBCXX_USE_COMPILER_RT=TRUE',
+        '-DLIBCXXABI_USE_COMPILER_RT=TRUE',
+        '-DLIBUNWIND_USE_COMPILER_RT=TRUE',
+        '-DLIBCXXABI_USE_LLVM_UNWINDER=TRUE',
+    ]
+
+
 def GetNativeCPUFlags():
     m = platform.machine()
     if m.startswith('x86'):
@@ -400,19 +414,11 @@ def Bootstrap(config, stage):
             cflags=GetDefaultFlags(),
             cxxflags=GetDefaultFlags(),
             ld=ld,
-            ldflags=ldflags + GetLdPathFlags(cc, ld) + [
-                # libc++ uses libc++abi and libunwind beging built.
-                '-Wl,-rpath,$ORIGIN',
-            ],
+            ldflags=ldflags + GetLdPathFlags(cc, ld) + GetRuntimesLdFlags(),
             runtimes=GetRuntimes(),
             use_malloc='mimalloc',
             ninja_targets=GetRuntimeTargets(),
-            extra_cmake_flags=extra_cmake_flags + [
-                '-DLIBCXX_USE_COMPILER_RT=TRUE',
-                '-DLIBCXXABI_USE_COMPILER_RT=TRUE',
-                '-DLIBUNWIND_USE_COMPILER_RT=TRUE',
-                '-DLIBCXXABI_USE_LLVM_UNWINDER=TRUE',
-            ],
+            extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
         )
         rc = RB.ConfigAndBuild()
         if rc != 0:
