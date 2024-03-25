@@ -394,13 +394,13 @@ def Bootstrap(config, stage):
             cxx = os.path.join(install_prefix, 'bin/clang++')
             ld = os.path.join(install_prefix, 'bin/ld.lld')
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
-            if i == stage:
-                projects.extend(['clang-tools-extra'])
-                # Also build runtimes used by compiler users rather than
-                # compiler its self.
-                runtimes.extend(GetRuntimes())
-                ninja_targets.extend(GetClangToolsExtraTargets() +
-                                     GetRuntimeTargets())
+        if i == stage:
+            projects.extend(['clang-tools-extra'])
+            # Also build runtimes used by compiler users rather than
+            # compiler its self.
+            runtimes.extend(GetRuntimes())
+            ninja_targets.extend(GetClangToolsExtraTargets() +
+                                 GetRuntimeTargets())
         # Build runtimes by stage{i} driver.
         RB = RuntimeBuilder(
             # To compare stage2 and stage3 binaries, assertion must be disabled.
