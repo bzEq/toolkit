@@ -500,6 +500,54 @@ def BuildRuntimes(config):
     ).ConfigAndBuild()
 
 
+def BuildLibatomic(config):
+    os.makedirs(config.build_dir, exist_ok=True)
+    os.makedirs(config.install_prefix, exist_ok=True)
+    cflags = GetDefaultFlags()
+    if FeasibleToEnableThinLTO(config.cc, config.ld):
+        cflags.append(f'--ld-path={config.ld}')
+        cflags.append('-flto=thin')
+    srcs = [
+        os.path.join(config.monorepo, 'compiler-rt/lib/builtins/atomic.c'),
+    ]
+    out = os.path.join(config.build_dir, 'libatomic.so.1.0')
+    cmd = [
+        config.cc,
+        '-fPIC',
+        '-shared',
+        '-Wl,-rpath,$ORIGIN',
+    ]
+    cmd.extend(cflags)
+    cmd.extend(['-o', out])
+    rc = subprocess.call(cmd)
+    if rc != 0:
+        return rc
+    cmd = [
+        'install',
+        out,
+        config.install_prefix,
+    ]
+    rc = subprocess.call(cmd)
+    if rc != 0:
+        return rc
+    cmd = [
+        'ln',
+        '-sfn',
+        'libatomic.so.1.0',
+        'libatomic.so.1',
+    ]
+    rc = subprocess.call(cmd, cwd=config.install_prefix)
+    if rc != 0:
+        return rc
+    cmd = [
+        'ln',
+        '-sfn',
+        'libatomic.so.1',
+        'libatomic.so',
+    ]
+    return subprocess.call(cmd, cwd=config.install_prefix)
+
+
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
@@ -509,6 +557,7 @@ Profiles = {
     'clang2': Bootstrap2,
     'clang3': Bootstrap3,
     'runtimes': BuildRuntimes,
+    'libatomic': BuildLibatomic,
 }
 
 
