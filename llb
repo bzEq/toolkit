@@ -46,6 +46,10 @@ def GetLdPathFlags(cc, ld):
     return [f'--ld-path={ld}']
 
 
+def FeasibleToEnableThinLTO(cc, ld):
+    return cc.endswith('clang') and ld.endswith('lld')
+
+
 def GetMinimalToolchainTargets():
     return [
         'install-llvm-ar',
@@ -393,8 +397,7 @@ def Bootstrap(config, stage):
             cc = os.path.join(install_prefix, 'bin/clang')
             cxx = os.path.join(install_prefix, 'bin/clang++')
             ld = os.path.join(install_prefix, 'bin/ld.lld')
-        # Enable LTO if using clang and lld combination.
-        if cc.endswith('clang') and ld.endswith('lld'):
+        if FeasibleToEnableThinLTO(cc, ld):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
         # Build additional libraries and tools at the last stage.
         if i == stage:
@@ -480,7 +483,7 @@ def Bootstrap3(config):
 
 def BuildRuntimes(config):
     extra_cmake_flags = []
-    if config.cc.endswith('clang') and config.ld.endswith('lld'):
+    if FeasibleToEnableThinLTO(config.cc, config.ld):
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     return RuntimeBuilder(
         enable_assert=False,
