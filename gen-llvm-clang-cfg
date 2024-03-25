@@ -21,5 +21,7 @@ cat > llvm-clang++.cfg << EOF
 -rtlib=compiler-rt
 -unwindlib=libunwind
 -stdlib=libc++
+-Wl,-as-needed
 -lc++
+-Wl,-no-as-needed
 EOF
