@@ -150,7 +150,7 @@ def BuildForDebug(config):
             config_only=True).ConfigAndBuild()
 
 
-def BuildClang1(config):
+def BuildWithGCC(config):
     BS = BuildSpace(config.build_dir)
     # Force to use GNU toolchain.
     cc = shutil.which('gcc')
@@ -457,6 +457,10 @@ def Bootstrap(config, stage):
     return 0
 
 
+def Bootstrap1(config):
+    return Bootstrap(config, 1)
+
+
 def Bootstrap2(config):
     return Bootstrap(config, 2)
 
@@ -469,7 +473,8 @@ Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
     'staging': BuildForStaging,
-    'clang1': BuildClang1,
+    'gcc1': BuildWithGCC,
+    'clang1': Bootstrap1,
     'clang2': Bootstrap2,
     'clang3': Bootstrap3,
 }
