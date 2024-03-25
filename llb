@@ -15,7 +15,7 @@ import platform
 from copy import copy
 
 
-def GetNativeCPUFlag():
+def GetNativeCPUFlags():
     m = platform.machine()
     if m.startswith('x86'):
         return ['-march=native']
@@ -23,10 +23,10 @@ def GetNativeCPUFlag():
 
 
 def GetDefaultFlags():
-    return ['-pipe'] + GetNativeCPUFlag()
+    return ['-pipe'] + GetNativeCPUFlags()
 
 
-def GetLdPathFlag(cc, ld):
+def GetLdPathFlags(cc, ld):
     if not cc.endswith('clang'):
         return []
     return [f'--ld-path={ld}']
@@ -80,7 +80,7 @@ def BuildForStaging(config):
         cflags=GetDefaultFlags(),
         cxxflags=GetDefaultFlags(),
         ld=config.ld,
-        ldflags=GetLdPathFlag(config.cc, config.ld),
+        ldflags=GetLdPathFlags(config.cc, config.ld),
         use_malloc='mimalloc',
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
@@ -102,7 +102,7 @@ def BuildForStaging(config):
         cflags=GetDefaultFlags(),
         cxxflags=GetDefaultFlags(),
         ld=ld,
-        ldflags=GetLdPathFlag(cc, ld),
+        ldflags=GetLdPathFlags(cc, ld),
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
         ninja_targets=[
@@ -125,7 +125,7 @@ def BuildForDev(config):
         cflags=GetDefaultFlags(),
         cxxflags=GetDefaultFlags(),
         ld=config.ld,
-        ldflags=GetLdPathFlag(config.cc, config.ld),
+        ldflags=GetLdPathFlags(config.cc, config.ld),
         use_malloc='mimalloc',
         projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
@@ -144,7 +144,7 @@ def BuildForDebug(config):
             cflags=['-pipe'],
             cxxflags=['-pipe'],
             ld=config.ld,
-            ldflags=GetLdPathFlag(config.cc, config.ld),
+            ldflags=GetLdPathFlags(config.cc, config.ld),
             projects=['clang;lld'],
             runtimes=['compiler-rt'],
             config_only=True).ConfigAndBuild()
@@ -400,7 +400,7 @@ def Bootstrap(config, stage):
             cflags=GetDefaultFlags(),
             cxxflags=GetDefaultFlags(),
             ld=ld,
-            ldflags=ldflags + GetLdPathFlag(cc, ld),
+            ldflags=ldflags + GetLdPathFlags(cc, ld),
             runtimes=GetRuntimes(),
             use_malloc='mimalloc',
             ninja_targets=GetRuntimeTargets(),
@@ -431,7 +431,7 @@ def Bootstrap(config, stage):
                 os.path.join(BS.GetInstall(f'stage{i}'), 'include/c++/v1'),
             ],
             ld=ld,
-            ldflags=ldflags + GetLdPathFlag(cc, ld) + [
+            ldflags=ldflags + GetLdPathFlags(cc, ld) + [
                 # Link against the runtimes we just built.
                 '-L{}'.format(libdir),
                 '--rtlib=compiler-rt',
