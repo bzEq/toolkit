@@ -5,6 +5,7 @@ ln -sfn clang++ llvm-clang++
 cat > llvm-clang.cfg << EOF
 -pipe
 --ld-path=/opt/clang/bin/ld.lld
+-L/opt/clang/lib
 -Wl,-rpath,/opt/clang/lib
 -rtlib=compiler-rt
 -unwindlib=libunwind
@@ -15,6 +16,7 @@ cat > llvm-clang++.cfg << EOF
 -nostdinc++
 -nostdlib++
 -isystem /opt/clang/include/c++/v1
+-L/opt/clang/lib
 -Wl,-rpath,/opt/clang/lib
 -rtlib=compiler-rt
 -unwindlib=libunwind
