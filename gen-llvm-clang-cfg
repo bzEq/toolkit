@@ -1,23 +1,24 @@
 #!/bin/bash
-cd /opt/clang/bin
+PREFIX=${PREFIX:-"/opt/clang"}
+cd ${PREFIX}/bin
 ln -sfn clang llvm-clang
 ln -sfn clang++ llvm-clang++
 cat > llvm-clang.cfg << EOF
 -pipe
---ld-path=/opt/clang/bin/ld.lld
--L/opt/clang/lib
--Wl,-rpath,/opt/clang/lib
+--ld-path=${PREFIX}/bin/ld.lld
+-L${PREFIX}/lib
+-Wl,-rpath,${PREFIX}/lib
 -rtlib=compiler-rt
 -unwindlib=libunwind
 EOF
 cat > llvm-clang++.cfg << EOF
 -pipe
---ld-path=/opt/clang/bin/ld.lld
+--ld-path=${PREFIX}/bin/ld.lld
 -nostdinc++
 -nostdlib++
--isystem /opt/clang/include/c++/v1
--L/opt/clang/lib
--Wl,-rpath,/opt/clang/lib
+-isystem ${PREFIX}/include/c++/v1
+-L${PREFIX}/lib
+-Wl,-rpath,${PREFIX}/lib
 -rtlib=compiler-rt
 -unwindlib=libunwind
 -stdlib=libc++
