@@ -548,6 +548,28 @@ def BuildLibatomic(config):
     return subprocess.call(cmd, cwd=config.install_prefix)
 
 
+def PrintCmakeCommand(config):
+    cmd = Builder(
+        monorepo=config.monorepo,
+        build_dir=config.build_dir,
+        cmake=config.cmake_binary,
+        ninja=config.ninja_binary,
+        ccache=True,
+        cc=config.cc,
+        cxx=InferCXX(config.cc),
+        cflags=GetDefaultFlags(),
+        cxxflags=GetDefaultFlags(),
+        ld=config.ld,
+        ldflags=GetLdPathFlags(config.cc, config.ld),
+        use_malloc='mimalloc',
+        projects=['clang', 'lld'],
+        runtimes=['compiler-rt'],
+        config_only=True,
+    ).BuildCMakeCommand()
+    print(shlex.join(cmd))
+    return 0
+
+
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
@@ -558,6 +580,7 @@ Profiles = {
     'clang3': Bootstrap3,
     'runtimes': BuildRuntimes,
     'libatomic': BuildLibatomic,
+    'print_cmake': PrintCmakeCommand,
 }
 
 
