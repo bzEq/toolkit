@@ -524,6 +524,8 @@ def BuildLibatomic(config):
         return rc
     cmd = [
         'install',
+        '-m',
+        '644',
         out,
         config.install_prefix,
     ]
