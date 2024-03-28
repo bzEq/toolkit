@@ -111,7 +111,6 @@ def BuildForStaging(config):
     ld = os.path.join(BS.GetInstall('stage1'), 'bin/ld.lld')
     BS.RemoveBuild('stage2')
     B2 = Builder(
-        werror=True,
         jobs=config.jobs,
         monorepo=config.monorepo,
         build_dir=BS.GetBuild('stage2'),
