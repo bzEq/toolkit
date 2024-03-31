@@ -20,7 +20,10 @@ def main():
     parser.add_argument('--baseline', required=True)
     parser.add_argument('--experiment', required=True)
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
-    parser.add_argument('--ts', required=True)
+    parser.add_argument('ts',
+                        metavar='test-suite-directory',
+                        help='LLVM test suite source tree',
+                        nargs=1)
     config = parser.parse_args()
     CreateDirs(config)
     baseline_build_dir = os.path.abspath(
@@ -41,7 +44,7 @@ def Build(config, base, build_dir):
         '-DCMAKE_CXX_COMPILER={clang}'.format(clang=FindTool(base, 'clang++')),
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
         '-DTEST_SUITE_BENCHMARKING_ONLY=YES',
-        config.ts,
+        os.path.abspath(config.ts[0]),
     ]
     err = subprocess.call(cmd, cwd=build_dir)
     if err != 0:
