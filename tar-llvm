@@ -9,11 +9,10 @@ if [[ ${REV} =~ "main" ]]; then
   COMMITISH="main"
 fi
 
-export XZ_OPT='-T0'
-# Please ensure `tar.xz.command`` is configured by
-# `git config tar.xz.command "xz -z -T0"` or
-# `git config --global tar.xz.command "xz -z -T0"``
+# Please ensure `tar.zstd.command`` is configured by
+# `git config tar.zstd.command "zstd -T0"` or
+# `git config --global tar.zstd.command "zstd -T0"``
 
 cd ${LLVM_SRC} && \
-  git archive -o "/build/llvm-${REV}.tar.xz" \
+  git archive -o "/build/llvm-${REV}.tar.zstd" \
       "${COMMITISH}" --prefix="llvm-${REV}/"
