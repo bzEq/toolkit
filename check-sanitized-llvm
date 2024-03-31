@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-LLVM_STAGING=${LLVM_STAGING:-"/build/llvm-staging"}
+LLVM_BASE=${LLVM_BASE:-"/build/vanilla-llvm"}
 
-mkdir -p ${LLVM_STAGING}/build/sanitizers
-cd ${LLVM_STAGING}/build/sanitizers && \
-  env BUILDBOT_MONO_REPO_PATH="${LLVM_STAGING}/llvm-project" \
-      ${LLVM_STAGING}/llvm-zorg/zorg/buildbot/builders/sanitizers/buildbot_fast.sh
+mkdir -p ${LLVM_BASE}/build/sanitizers
+cd ${LLVM_BASE}/build/sanitizers && \
+  env BUILDBOT_MONO_REPO_PATH="${LLVM_BASE}/llvm-project" \
+      ${LLVM_BASE}/llvm-zorg/zorg/buildbot/builders/sanitizers/buildbot_fast.sh
