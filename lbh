@@ -473,7 +473,7 @@ def BuildWithPGOAndLTO(config):
 def UpdateRepo(config):
     env = copy.deepcopy(os.environ)
     if not config.disable_proxy:
-        env['https_proxy'] = 'socks5h://localhost:1080'
+        env['https_proxy'] = 'socks5://localhost:1080'
         # Requires net-analyzer/openbsd-netcat on Gentoo,
         # netcat-openbsd on Debian.
         env['GIT_SSH_COMMAND'] = 'ssh -o ProxyCommand="nc -v -x 127.0.0.1:1080 %h %p"'
@@ -483,11 +483,7 @@ def UpdateRepo(config):
     if config.init:
         cmd = ['git', 'clone', url]
         return subprocess.call(cmd, env=env)
-    return subprocess.call([
-        'git',
-        'pull',
-        '--recurse-submodules',
-    ])
+    return subprocess.call(['git', 'pull', '--recurse-submodules'], timeout=30)
 
 
 def main():
