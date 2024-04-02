@@ -513,15 +513,13 @@ def BuildLibatomic(config):
     out = os.path.join(config.build_dir, 'libatomic.so.1.0')
     cmd = [
         config.cc,
-        '-pipe',
-        '-march=native',
         '-O3',
         '-fPIC',
         '-shared',
         '-Wl,-rpath,$ORIGIN',
+        '-o', out,
     ]
     cmd.extend(cflags)
-    cmd.extend(['-o', out])
     rc = subprocess.call(cmd)
     if rc != 0:
         return rc
