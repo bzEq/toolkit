@@ -517,8 +517,9 @@ def BuildLibatomic(config):
         '-fPIC',
         '-shared',
         '-Wl,-rpath,$ORIGIN',
-        '-o', out,
-    ]
+        '-o',
+        out,
+    ] + srcs
     cmd.extend(cflags)
     rc = subprocess.call(cmd)
     if rc != 0:
