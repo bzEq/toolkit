@@ -54,6 +54,7 @@ def GetMinimalToolchainTargets():
     return [
         'install-llvm-ar',
         'install-llvm-ranlib',
+        'install-llvm-profdata',
         'install-clang',
         'install-lld',
         'install-clang-resource-headers',
