@@ -84,6 +84,8 @@ def InferCXX(cc):
         return cc[:-len('gcc')] + 'g++'
     if cc.endswith('clang'):
         return cc[:-len('clang')] + 'clang++'
+    if cc.endswith('icx'):
+        return cc[:-len('icx')] + 'icpx'
     raise Exception(f'Unrecognized compiler: {cc}')
 
 
