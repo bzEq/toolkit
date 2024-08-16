@@ -25,7 +25,7 @@ def Update(monorepo, build, f):
         ]
         env = os.environ.copy()
         env['PATH'] = os.path.join(build, 'bin') + os.pathsep + env['PATH']
-        subprocess.run(cmd, env=env)
+        return subprocess.run(cmd, env=env)
 
 
 def main():
