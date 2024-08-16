@@ -404,7 +404,7 @@ def Bootstrap(config, stage):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
         # Build additional tools at the last stage.
         if i == stage:
-            projects.extend(['clang-tools-extra'])
+            projects.extend(['clang-tools-extra', 'polly', 'bolt'])
             ninja_targets.extend(GetClangToolsExtraTargets())
         # Build runtimes by stage{i} driver.
         RB = RuntimeBuilder(
