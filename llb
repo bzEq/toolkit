@@ -406,6 +406,7 @@ def Bootstrap(config, stage):
         if i == stage:
             projects.extend(['clang-tools-extra', 'polly', 'bolt'])
             ninja_targets.extend(GetClangToolsExtraTargets())
+            ninja_targets.extend(['install-bolt'])
         # Build runtimes by stage{i} driver.
         RB = RuntimeBuilder(
             # To compare stage2 and stage3 binaries, assertion must be disabled.
