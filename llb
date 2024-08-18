@@ -96,6 +96,7 @@ def BuildForStaging(config):
         monorepo=config.monorepo,
         build_dir=BS.GetBuild('stage1'),
         install_prefix=BS.GetInstall('stage1'),
+        ccache=True,
         cc=config.cc,
         cxx=InferCXX(config.cc),
         cflags=GetDefaultFlags(),
