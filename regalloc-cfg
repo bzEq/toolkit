@@ -53,6 +53,7 @@ class ParseContext(object):
             if self.current_bb:
                 self.bbs.append(self.current_bb)
             self.current_bb = BB(m.group(1))
+            self.current_bb.Append(m.group(0))
             return
         m = SUCCESSORS.search(l)
         if m:
