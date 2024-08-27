@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Infer control flow graph via regalloc's debug log.
+import os
+import sys
+import re
+import subprocess
+import argparse
+import shutil
+import bisect
+import logging
+import io
+import shlex
+
+BB_NAME = re.compile(r'bb\.[0-9]+')
+LABEL = re.compile(r'^[0-9]+B\s+(bb\.[0-9]+).*:$')
+SUCCESSORS = re.compile(r'successors:\s+(.*);')
+INSTRUCTION = re.compile(r'^[0-9]+B\s+(.*)$')
+
+
+class BB(object):
+
+    def __init__(self, name):
+        self.name = name
+        self.body = []
+        self.successors = set()
+
+    def AddSuccessor(self, succ):
+        self.successors.add(succ)
+        return self
+
+    def Append(self, inst):
+        self.body.append(inst)
+        return self
+
+
+class ParseContext(object):
+
+    def __init__(self, stream):
+        self.stream = stream
+        self.bbs = []
+        self.current_bb = None
+
+    def Parse(self):
+        for l in self.stream:
+            self.parseLine(l)
+        if self.current_bb is not None and self.current_bb not in self.bbs:
+            self.bbs.append(self.current_bb)
+
+    def parseLine(self, l):
+        m = LABEL.match(l)
+        if m:
+            if self.current_bb:
+                self.bbs.append(self.current_bb)
+            self.current_bb = BB(m.group(1))
+            return
+        m = SUCCESSORS.search(l)
+        if m:
+            assert (self.current_bb)
+            for e in m.group(1).split(','):
+                s = BB_NAME.search(e)
+                assert (s)
+                self.current_bb.AddSuccessor(s.group(0))
+            return
+        m = INSTRUCTION.match(l)
+        if not m:
+            return
+        assert (self.current_bb)
+        self.current_bb.Append(m.group(0))
+        return
+
+
+class Dotter(object):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def Dot(self, out_stream, name='foo'):
+        out_stream.write('digraph {} '.format(name))
+        out_stream.write('{\n')
+        out_stream.write('  node [shape="box", fontname="monospace"];\n')
+        for bb in self.ctx.bbs:
+            bb_name = bb.name.replace('.', '_')
+            instructions = '\\l'.join(bb.body) + '\\l'
+            out_stream.write('  %s [label="%s"];\n' % (bb_name, instructions))
+        for bb in self.ctx.bbs:
+            src_name = bb.name.replace('.', '_')
+            for tgt in bb.successors:
+                tgt_name = tgt.replace('.', '_')
+                out_stream.write('  %s -> %s;\n' % (src_name, tgt_name))
+        out_stream.write('}\n')
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Output CFG dot file via -debug-only=regalloc.')
+    parser.add_argument('-o', dest='out')
+    parser.add_argument('log', nargs=1)
+    config = parser.parse_args()
+    with open(config.log[0], 'r') as f:
+        ctx = ParseContext(f)
+        ctx.Parse()
+    with open(config.out, 'w') as out:
+        Dotter(ctx).Dot(out)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
