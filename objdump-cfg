@@ -29,6 +29,7 @@ LONG_BRANCHES = [
         r'\bblr\b',
         r'\bretq\b',
         r'\bret\b',
+        r'\bbx\b',
     ]
 ]
 
@@ -74,6 +75,7 @@ def UpperBound(a, x, lo=0, hi=None, key=lambda x: x):
 
 
 class Function(object):
+
     def __init__(self, name):
         self.name = name
         self.address = -1
@@ -87,6 +89,7 @@ class Function(object):
 
 
 class CFGAnalyzer(object):
+
     def __init__(self, function, branch_analyzer):
         self.function = function
         self.branch_analyzer = branch_analyzer
@@ -129,6 +132,7 @@ class CFGAnalyzer(object):
 
 
 class GraphvizPainter(object):
+
     def __init__(self, function, cfg_analyzer):
         self.function = function
         self.cfg_analyzer = cfg_analyzer
@@ -153,6 +157,7 @@ class GraphvizPainter(object):
 
 
 class BranchAnalyzer(object):
+
     def __init__(self, context, function):
         self.context = context
         self.function = function
@@ -202,6 +207,7 @@ class BranchAnalyzer(object):
 
 
 class ParseContext(object):
+
     def __init__(self, in_stream):
         self.current_function = ''
         self.functions = {}
