@@ -1,0 +1,6 @@
+#!/bin/bash
+set -x
+set -e
+echo 0 |sudo tee /proc/sys/kernel/randomize_va_space
+echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost
+sudo cpupower frequency-set --governor performance
