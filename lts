@@ -29,7 +29,6 @@ class Builder(object):
     def Config(self):
         cflags = [
             '-pipe',
-            '--ld-path={}'.format(self.FindTool('ld.lld')),
             '-march=native',
         ]
         cxxflags = cflags[:]
@@ -37,6 +36,9 @@ class Builder(object):
             cflags.extend(shlex.split(self.config.cflags))
         if self.config.cxxflags:
             cxxflags.extend(shlex.split(self.config.cxxflags))
+        ldflags = [
+            '--ld-path={}'.format(self.FindTool('ld.lld')),
+        ]
         cmd = [
             self.config.cmake_binary,
             '-GNinja',
@@ -45,11 +47,14 @@ class Builder(object):
             '-DCMAKE_CXX_COMPILER={}'.format(self.FindTool('clang++')),
             '-DCMAKE_C_FLAGS={}'.format(shlex.join(cflags)),
             '-DCMAKE_CXX_FLAGS={}'.format(shlex.join(cxxflags)),
+            '-DCMAKE_EXE_LINKER_FLAGS={}'.format(shlex.join(ldflags)),
             '-S',
             os.path.abspath(self.config.src_dir),
             '-B',
             os.path.abspath(self.config.build_dir),
         ]
+        if self.config.benchmarks_only:
+            cmd.append('-DTEST_SUITE_BENCHMARKING_ONLY=ON')
         err = subprocess.call(cmd)
         if err != 0:
             logging.error('cmake failed: {}'.format(cmd))
@@ -73,6 +78,9 @@ def main():
     parser.add_argument('--src_dir', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('--llvm_build_dir', required=True)
+    parser.add_argument('--benchmarks_only',
+                        actiore='store_true',
+                        default=False)
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
     parser.add_argument('--cflags')
