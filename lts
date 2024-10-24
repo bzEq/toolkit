@@ -79,7 +79,7 @@ def main():
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('--llvm_build_dir', required=True)
     parser.add_argument('--benchmarks_only',
-                        actiore='store_true',
+                        action='store_true',
                         default=False)
     parser.add_argument('--cmake_binary', default=shutil.which('cmake'))
     parser.add_argument('--ninja_binary', default=shutil.which('ninja'))
