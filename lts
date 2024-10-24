@@ -43,6 +43,7 @@ class Builder(object):
             self.config.cmake_binary,
             '-GNinja',
             '-DCMAKE_BUILD_TYPE=Release',
+            '-DTEST_SUITE_USE_PERF=ON',
             '-DCMAKE_C_COMPILER={}'.format(self.FindTool('clang')),
             '-DCMAKE_CXX_COMPILER={}'.format(self.FindTool('clang++')),
             '-DCMAKE_C_FLAGS={}'.format(shlex.join(cflags)),
@@ -55,6 +56,7 @@ class Builder(object):
         ]
         if self.config.benchmarks_only:
             cmd.append('-DTEST_SUITE_BENCHMARKING_ONLY=ON')
+            cmd.append('-DTEST_SUITE_SUBDIRS=SingleSource;MultiSource')
         err = subprocess.call(cmd)
         if err != 0:
             logging.error('cmake failed: {}'.format(cmd))
