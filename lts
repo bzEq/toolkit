@@ -30,6 +30,7 @@ class Builder(object):
         cflags = [
             '-pipe',
             '--ld-path={}'.format(self.FindTool('ld.lld')),
+            '-march=native',
         ]
         cxxflags = cflags[:]
         if self.config.cflags:
