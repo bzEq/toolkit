@@ -380,22 +380,23 @@ def Bootstrap(config, stage):
         return 1
     if stage > 3:
         stage = 3
-    cc = shutil.which(config.cc)
-    cxx = InferCXX(cc)
-    ld = shutil.which(config.ld)
     BS = BuildSpace(config.build_dir)
-    for i in range(1, stage + 1):
-        ninja_targets = GetMinimalToolchainTargets()
-        ldflags = []
-        cflags = GetDefaultFlags()
-        cxxflags = GetDefaultFlags()
+    cc = shutil.which(config.cc)
+    common_cflags = GetDefaultFlags()
+    cxx = InferCXX(cc)
+    common_cxxflags = GetDefaultFlags()
+    ld = shutil.which(config.ld)
+    common_ldflags = []
+    common_extra_cmake_flags = [
         # CMake does not set the -fpic option when building static libraries.
         # See https://github.com/gabime/spdlog/issues/1405.
-        extra_cmake_flags = [
-            '-DCMAKE_POSITION_INDEPENDENT_CODE=On',
-        ]
-        projects = ['clang', 'lld']
-        runtimes = ['compiler-rt']
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=On',
+    ]
+    for i in range(1, stage + 1):
+        cflags = common_cflags[:]
+        cxxflags = common_cxxflags[:]
+        ldflags = common_ldflags[:]
+        extra_cmake_flags = common_extra_cmake_flags[:]
         if i > 1:
             install_prefix = BS.GetInstall(f'stage{i-1}')
             cc = os.path.join(install_prefix, 'bin/clang')
@@ -403,12 +404,8 @@ def Bootstrap(config, stage):
             ld = os.path.join(install_prefix, 'bin/ld.lld')
         if FeasibleToEnableThinLTO(cc, ld):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
-        # Build additional tools at the last stage.
-        if i == stage:
-            projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
-            ninja_targets.extend(GetClangToolsExtraTargets())
-            ninja_targets.extend(['install-bolt', 'install-lldb'])
-        # Build runtimes by stage{i} driver.
+        # Build libatomic firstly.
+        # Build runtimes using stage{i-1} driver.
         RB = RuntimeBuilder(
             # To compare stage2 and stage3 binaries, assertion must be disabled.
             enable_assert=False,
@@ -430,6 +427,14 @@ def Bootstrap(config, stage):
         rc = RB.ConfigAndBuild()
         if rc != 0:
             return rc
+        projects = ['clang', 'lld']
+        runtimes = ['compiler-rt']
+        ninja_targets = GetMinimalToolchainTargets()
+        # Build additional tools at the last stage.
+        if i == stage:
+            projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
+            ninja_targets.extend(GetClangToolsExtraTargets())
+            ninja_targets.extend(['install-bolt', 'install-lldb'])
         libdir = os.path.join(BS.GetInstall(f'stage{i}'), 'lib')
         B = Builder(
             enable_assert=False,
@@ -453,13 +458,15 @@ def Bootstrap(config, stage):
                 '--rtlib=compiler-rt',
                 '--unwindlib=libunwind',
                 '--stdlib=libc++',
+                '-Wl,-as-needed',
                 '-lc++',
+                '-Wl,-no-as-needed',
             ],
             runtimes=runtimes,
             projects=projects,
             use_malloc='mimalloc',
             # Currently, binaries are in build tree, not install tree, so RUNPATH may be
-            # not pointing the libdir in need.
+            # not pointing to the libdir.
             env={'LD_LIBRARY_PATH': libdir},
             ninja_targets=ninja_targets,
             extra_cmake_flags=extra_cmake_flags,
