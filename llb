@@ -456,7 +456,8 @@ def Bootstrap(config, stage):
                 ninja_targets.extend(GetClangToolsExtraTargets())
                 ninja_targets.extend(['install-bolt', 'install-lldb'])
             else:
-                ninja_targets = ['check-all', 'check-runtimes']
+                # FIXME: JITLink's tests in compiler-rt don't pass if built with libc++.
+                ninja_targets = ['check-llvm', 'check-runtimes']
         libdir = os.path.abspath(
             os.path.join(BS.GetInstall(f'stage{i}'), 'lib'))
         if IS_STAGING:
