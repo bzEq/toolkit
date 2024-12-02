@@ -425,6 +425,37 @@ def Bootstrap(config, stage):
         if FeasibleToEnableThinLTO(cc, ld):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
         # Build libatomic firstly.
+        AB = AtomicLibBuilder(
+            enable_assert=False,
+            jobs=config.jobs,
+            monorepo=config.monorepo,
+            build_dir=BS.GetBuild(f'stage{i}-atomic'),
+            install_prefix=BS.GetInstall(f'stage{i}'),
+            cc=cc,
+            cxx=cxx,
+            cflags=GetDefaultFlags(),
+            cxxflags=GetDefaultFlags(),
+            ld=ld,
+            ldflags=ldflags + GetLdPathFlags(cc, ld) + GetRuntimesLdFlags(),
+            runtimes=['compiler-rt'],
+            use_malloc='mimalloc',
+            ninja_targets=['install-builtins-standalone-atomic'],
+            extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
+        )
+        rc = AB.ConfigAndBuild()
+        if rc != 0:
+            return rc
+        make_sym_link = [
+            'ln',
+            '-sfn',
+            # FIXME: Don't hard code `linux` and `x86_64`.
+            'linux/libclang_rt.atomic-x86_64.so',
+            'libatomic.so.1',
+        ]
+        rc = subprocess.call(make_sym_link,
+                             cwd=os.path.join(AB.install_prefix, 'lib'))
+        if rc != 0:
+            return rc
         # Build runtimes using stage{i-1} driver.
         RB = RuntimeBuilder(
             # To compare stage2 and stage3 binaries, assertion must be disabled.
