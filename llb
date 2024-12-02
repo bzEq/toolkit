@@ -93,53 +93,6 @@ def InferCXX(cc):
     raise Exception(f'Unrecognized compiler: {cc}')
 
 
-# Deprecated.
-def BuildForStaging(config):
-    BS = BuildSpace(config.build_dir)
-    B1 = Builder(
-        jobs=config.jobs,
-        monorepo=config.monorepo,
-        build_dir=BS.GetBuild('stage1'),
-        install_prefix=BS.GetInstall('stage1'),
-        ccache=True,
-        cc=config.cc,
-        cxx=InferCXX(config.cc),
-        cflags=GetDefaultFlags(),
-        cxxflags=GetDefaultFlags(),
-        ld=config.ld,
-        ldflags=GetLdPathFlags(config.cc, config.ld),
-        use_malloc='mimalloc',
-        projects=['clang', 'lld'],
-        runtimes=['compiler-rt'],
-        ninja_targets=GetMinimalToolchainTargets(),
-    )
-    rc = B1.ConfigAndBuild()
-    if rc != 0:
-        return rc
-    cc = os.path.join(BS.GetInstall('stage1'), 'bin/clang')
-    ld = os.path.join(BS.GetInstall('stage1'), 'bin/ld.lld')
-    BS.RemoveBuild('stage2')
-    B2 = Builder(
-        jobs=config.jobs,
-        monorepo=config.monorepo,
-        build_dir=BS.GetBuild('stage2'),
-        install_prefix=BS.GetInstall('stage2'),
-        cc=cc,
-        cxx=InferCXX(cc),
-        cflags=GetDefaultFlags(),
-        cxxflags=GetDefaultFlags(),
-        ld=ld,
-        ldflags=GetLdPathFlags(cc, ld),
-        projects=['clang', 'lld'],
-        runtimes=['compiler-rt'],
-        ninja_targets=[
-            'check-all',
-            'check-runtimes',
-        ],
-    )
-    return B2.ConfigAndBuild()
-
-
 def BuildForDev(config):
     return Builder(
         monorepo=config.monorepo,
@@ -613,56 +566,6 @@ def BuildAtomicLib(config):
     return AB.MakeSymLinks()
 
 
-def BuildLibatomic(config):
-    os.makedirs(config.build_dir, exist_ok=True)
-    os.makedirs(config.install_prefix, exist_ok=True)
-    cflags = GetDefaultFlags()
-    if FeasibleToEnableThinLTO(config.cc, config.ld):
-        cflags.append(f'--ld-path={config.ld}')
-        cflags.append('-flto=thin')
-    srcs = [
-        os.path.join(config.monorepo, 'compiler-rt/lib/builtins/atomic.c'),
-    ]
-    out = os.path.join(config.build_dir, 'libatomic.so.1.0')
-    cmd = [
-        config.cc,
-        '-O3',
-        '-fPIC',
-        '-shared',
-        '-Wl,-rpath,$ORIGIN',
-        '-o',
-        out,
-    ] + srcs
-    cmd.extend(cflags)
-    rc = subprocess.call(cmd)
-    if rc != 0:
-        return rc
-    cmd = [
-        'install',
-        out,
-        config.install_prefix,
-    ]
-    rc = subprocess.call(cmd)
-    if rc != 0:
-        return rc
-    cmd = [
-        'ln',
-        '-sfn',
-        'libatomic.so.1.0',
-        'libatomic.so.1',
-    ]
-    rc = subprocess.call(cmd, cwd=config.install_prefix)
-    if rc != 0:
-        return rc
-    cmd = [
-        'ln',
-        '-sfn',
-        'libatomic.so.1',
-        'libatomic.so',
-    ]
-    return subprocess.call(cmd, cwd=config.install_prefix)
-
-
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
@@ -674,8 +577,6 @@ Profiles = {
     'clang3': Bootstrap3,
     'runtimes': BuildRuntimes,
     'atomic': BuildAtomicLib,
-    # Deprecated.
-    'libatomic': BuildLibatomic,
 }
 
 
