@@ -342,6 +342,20 @@ class RuntimeBuilder(Builder):
                             self.build_dir)
 
 
+class AtomicLibBuilder(Builder):
+
+    def __init__(self, *args, **kwargs):
+        if 'extra_cmake_flags' not in kwargs:
+            kwargs['extra_cmake_flags'] = []
+        kwargs['extra_cmake_flags'].append(
+            '-DCOMPILER_RT_BUILD_STANDALONE_LIBATOMIC=On')
+        super().__init__(*args, **kwargs)
+
+    def Config(self):
+        return self._Config(os.path.join(self.monorepo, 'compiler-rt'),
+                            self.build_dir)
+
+
 class BuildSpace(object):
 
     def __init__(self, root):
@@ -512,6 +526,40 @@ def BuildRuntimes(config):
     ).ConfigAndBuild()
 
 
+def BuildAtomicLib(config):
+    extra_cmake_flags = []
+    if FeasibleToEnableThinLTO(config.cc, config.ld):
+        extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+    rc = AtomicLibBuilder(
+        enable_assert=False,
+        jobs=config.jobs,
+        monorepo=config.monorepo,
+        build_dir=config.build_dir,
+        install_prefix=config.install_prefix,
+        cc=config.cc,
+        cxx=InferCXX(config.cc),
+        cflags=GetDefaultFlags(),
+        cxxflags=GetDefaultFlags(),
+        ld=config.ld,
+        ldflags=GetLdPathFlags(config.cc, config.ld) + GetRuntimesLdFlags(),
+        runtimes=['compiler-rt'],
+        use_malloc='mimalloc',
+        ninja_targets=['install-builtins-standalone-atomic'],
+        extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
+    ).ConfigAndBuild()
+    if rc != 0:
+        return rc
+    # Create a sym link, which is named `libatomic.so`, to clang_rt.atomic.
+    cmd = [
+        'ln',
+        '-sfn',
+        # FIXME: Don't hard code `linux` and `x86_64`.
+        'linux/libclang_rt.atomic-x86_64.so',
+        'libatomic.so.1',
+    ]
+    return subprocess.call(cmd, cwd=os.path.join(config.install_prefix, 'lib'))
+
+
 def BuildLibatomic(config):
     os.makedirs(config.build_dir, exist_ok=True)
     os.makedirs(config.install_prefix, exist_ok=True)
@@ -593,6 +641,8 @@ Profiles = {
     'clang2': Bootstrap2,
     'clang3': Bootstrap3,
     'runtimes': BuildRuntimes,
+    'atomic': BuildAtomicLib,
+    # Deprecated.
     'libatomic': BuildLibatomic,
     'print_cmake': PrintCmakeCommand,
 }
