@@ -16,6 +16,7 @@ from copy import copy
 
 # FIXME: Should not use global variable.
 PRINT_CMAKE_COMMAND = False
+IS_STAGING = False
 
 
 def GetRuntimesLdFlags():
@@ -50,7 +51,7 @@ def GetLdPathFlags(cc, ld):
 
 
 def FeasibleToEnableThinLTO(cc, ld):
-    return cc.endswith('clang') and ld.endswith('lld')
+    return not IS_STAGING and cc.endswith('clang') and ld.endswith('lld')
 
 
 def GetMinimalToolchainTargets():
@@ -92,6 +93,7 @@ def InferCXX(cc):
     raise Exception(f'Unrecognized compiler: {cc}')
 
 
+# Deprecated.
 def BuildForStaging(config):
     BS = BuildSpace(config.build_dir)
     B1 = Builder(
@@ -139,7 +141,7 @@ def BuildForStaging(config):
 
 
 def BuildForDev(config):
-    Builder(
+    return Builder(
         monorepo=config.monorepo,
         build_dir=config.build_dir,
         cmake=config.cmake_binary,
@@ -159,20 +161,22 @@ def BuildForDev(config):
 
 
 def BuildForDebug(config):
-    Builder(monorepo=config.monorepo,
-            build_dir=config.build_dir,
-            cmake=config.cmake_binary,
-            ninja=config.ninja_binary,
-            build_type='Debug',
-            cc=config.cc,
-            cxx=InferCXX(config.cc),
-            cflags=['-pipe'],
-            cxxflags=['-pipe'],
-            ld=config.ld,
-            ldflags=GetLdPathFlags(config.cc, config.ld),
-            projects=['clang;lld'],
-            runtimes=['compiler-rt'],
-            config_only=True).ConfigAndBuild()
+    return Builder(
+        monorepo=config.monorepo,
+        build_dir=config.build_dir,
+        cmake=config.cmake_binary,
+        ninja=config.ninja_binary,
+        build_type='Debug',
+        cc=config.cc,
+        cxx=InferCXX(config.cc),
+        cflags=['-pipe'],
+        cxxflags=['-pipe'],
+        ld=config.ld,
+        ldflags=GetLdPathFlags(config.cc, config.ld),
+        projects=['clang;lld'],
+        runtimes=['compiler-rt'],
+        config_only=True,
+    ).ConfigAndBuild()
 
 
 def BuildWithGCC(config):
@@ -416,6 +420,8 @@ def Bootstrap(config, stage):
     if stage > 3:
         stage = 3
     BS = BuildSpace(config.build_dir)
+    if IS_STAGING:
+        BS.Clear()
     cc = shutil.which(config.cc)
     common_cflags = GetDefaultFlags()
     cxx = InferCXX(cc)
@@ -441,7 +447,8 @@ def Bootstrap(config, stage):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
         # Build libatomic firstly.
         AB = AtomicLibBuilder(
-            enable_assert=False,
+            ccache=IS_STAGING and i == 1,
+            enable_assert=IS_STAGING,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}-atomic'),
@@ -465,8 +472,9 @@ def Bootstrap(config, stage):
             return rc
         # Build runtimes using stage{i-1} driver.
         RB = RuntimeBuilder(
+            ccache=IS_STAGING and i == 1,
             # To compare stage2 and stage3 binaries, assertion must be disabled.
-            enable_assert=False,
+            enable_assert=IS_STAGING,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}-runtimes'),
@@ -490,12 +498,19 @@ def Bootstrap(config, stage):
         ninja_targets = GetMinimalToolchainTargets()
         # Build additional tools at the last stage.
         if i == stage:
-            projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
-            ninja_targets.extend(GetClangToolsExtraTargets())
-            ninja_targets.extend(['install-bolt', 'install-lldb'])
-        libdir = os.path.join(BS.GetInstall(f'stage{i}'), 'lib')
+            if not IS_STAGING:
+                projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
+                ninja_targets.extend(GetClangToolsExtraTargets())
+                ninja_targets.extend(['install-bolt', 'install-lldb'])
+            else:
+                ninja_targets = ['check-all', 'check-runtimes']
+        libdir = os.path.abspath(
+            os.path.join(BS.GetInstall(f'stage{i}'), 'lib'))
+        if IS_STAGING:
+            ldflags.append(f'-Wl,-rpath,{libdir}')
         B = Builder(
-            enable_assert=False,
+            ccache=IS_STAGING and i == 1,
+            enable_assert=IS_STAGING,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}'),
@@ -526,7 +541,7 @@ def Bootstrap(config, stage):
             use_malloc='mimalloc',
             # Currently, binaries are in build tree, not install tree, so RUNPATH may be
             # not pointing to the libdir.
-            env={'LD_LIBRARY_PATH': libdir},
+            env={} if IS_STAGING else {'LD_LIBRARY_PATH': libdir},
             ninja_targets=ninja_targets,
             extra_cmake_flags=extra_cmake_flags,
         )
@@ -651,7 +666,8 @@ def BuildLibatomic(config):
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
-    'staging': BuildForStaging,
+    'staging': Bootstrap2,
+    'strict_staging': Bootstrap3,
     'gcc': BuildWithGCC,
     'clang1': Bootstrap1,
     'clang2': Bootstrap2,
@@ -684,6 +700,9 @@ def main():
     if config.print_cmake_command:
         global PRINT_CMAKE_COMMAND
         PRINT_CMAKE_COMMAND = True
+    if config.profile == 'staging' or config.profile == 'strict_staging':
+        global IS_STAGING
+        IS_STAGING = True
     if config.profile in Profiles:
         return Profiles[config.profile](config)
     logging.error(f"No builder for {config.profile}")
