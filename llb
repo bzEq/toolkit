@@ -14,6 +14,9 @@ import logging
 import platform
 from copy import copy
 
+# FIXME: Should not use global variable.
+PRINT_CMAKE_COMMAND = False
+
 
 def GetRuntimesLdFlags():
     # libc++ uses libc++abi and libunwind being built.
@@ -303,6 +306,9 @@ class Builder(object):
         cmake_command.extend(['-B', build_dir])
         env = os.environ.copy()
         env.update(self.env)
+        if PRINT_CMAKE_COMMAND:
+            print(shlex.join(cmake_command))
+            return 1
         err = subprocess.call(cmake_command, env=env)
         if err != 0:
             logging.error(f'cmake failed: {cmake_command}')
@@ -610,28 +616,6 @@ def BuildLibatomic(config):
     return subprocess.call(cmd, cwd=config.install_prefix)
 
 
-def PrintCmakeCommand(config):
-    cmd = Builder(
-        monorepo=config.monorepo,
-        build_dir=config.build_dir,
-        cmake=config.cmake_binary,
-        ninja=config.ninja_binary,
-        ccache=True,
-        cc=config.cc,
-        cxx=InferCXX(config.cc),
-        cflags=GetDefaultFlags(),
-        cxxflags=GetDefaultFlags(),
-        ld=config.ld,
-        ldflags=GetLdPathFlags(config.cc, config.ld),
-        use_malloc='mimalloc',
-        projects=['clang', 'lld'],
-        runtimes=['compiler-rt'],
-        config_only=True,
-    ).BuildCMakeCommand()
-    print(shlex.join(cmd))
-    return 0
-
-
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
@@ -644,7 +628,6 @@ Profiles = {
     'atomic': BuildAtomicLib,
     # Deprecated.
     'libatomic': BuildLibatomic,
-    'print_cmake': PrintCmakeCommand,
 }
 
 
@@ -660,9 +643,15 @@ def main():
     parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('--install_prefix')
+    parser.add_argument('--print_cmake_command',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--werror', default=False, action='store_true')
     parser.add_argument('-p', dest='profile', type=str, default='dev')
     config = parser.parse_args()
+    if config.print_cmake_command:
+        global PRINT_CMAKE_COMMAND
+        PRINT_CMAKE_COMMAND = True
     if config.profile in Profiles:
         return Profiles[config.profile](config)
     logging.error(f"No builder for {config.profile}")
