@@ -361,6 +361,21 @@ class AtomicLibBuilder(Builder):
         return self._Config(os.path.join(self.monorepo, 'compiler-rt'),
                             self.build_dir)
 
+    def MakeSymLinks(self):
+        for suffix in ['', '.1']:
+            make_sym_link = [
+                'ln',
+                '-sfn',
+                # FIXME: Don't hard code `linux` and `x86_64`.
+                'linux/libclang_rt.atomic-x86_64.so',
+                f'libatomic.so{suffix}',
+            ]
+            rc = subprocess.call(make_sym_link,
+                                 cwd=os.path.join(self.install_prefix, 'lib'))
+            if rc != 0:
+                return rc
+        return 0
+
 
 class BuildSpace(object):
 
@@ -445,15 +460,7 @@ def Bootstrap(config, stage):
         rc = AB.ConfigAndBuild()
         if rc != 0:
             return rc
-        make_sym_link = [
-            'ln',
-            '-sfn',
-            # FIXME: Don't hard code `linux` and `x86_64`.
-            'linux/libclang_rt.atomic-x86_64.so',
-            'libatomic.so.1',
-        ]
-        rc = subprocess.call(make_sym_link,
-                             cwd=os.path.join(AB.install_prefix, 'lib'))
+        rc = AB.MakeSymLinks()
         if rc != 0:
             return rc
         # Build runtimes using stage{i-1} driver.
@@ -511,6 +518,7 @@ def Bootstrap(config, stage):
                 '--stdlib=libc++',
                 '-Wl,-as-needed',
                 '-lc++',
+                '-latomic',
                 '-Wl,-no-as-needed',
             ],
             runtimes=runtimes,
@@ -567,7 +575,7 @@ def BuildAtomicLib(config):
     extra_cmake_flags = []
     if FeasibleToEnableThinLTO(config.cc, config.ld):
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
-    rc = AtomicLibBuilder(
+    AB = AtomicLibBuilder(
         enable_assert=False,
         jobs=config.jobs,
         monorepo=config.monorepo,
@@ -583,18 +591,11 @@ def BuildAtomicLib(config):
         use_malloc='mimalloc',
         ninja_targets=['install-builtins-standalone-atomic'],
         extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
-    ).ConfigAndBuild()
+    )
+    rc = AB.ConfigAndBuild()
     if rc != 0:
         return rc
-    # Create a sym link, which is named `libatomic.so`, to clang_rt.atomic.
-    cmd = [
-        'ln',
-        '-sfn',
-        # FIXME: Don't hard code `linux` and `x86_64`.
-        'linux/libclang_rt.atomic-x86_64.so',
-        'libatomic.so.1',
-    ]
-    return subprocess.call(cmd, cwd=os.path.join(config.install_prefix, 'lib'))
+    return AB.MakeSymLinks()
 
 
 def BuildLibatomic(config):
