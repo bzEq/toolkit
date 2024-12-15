@@ -26,10 +26,10 @@ def GetRuntimesLdFlags():
 
 def GetRuntimesCmakeFlags():
     return [
-        '-DLIBCXX_USE_COMPILER_RT=TRUE',
         '-DLIBCXXABI_USE_COMPILER_RT=TRUE',
-        '-DLIBUNWIND_USE_COMPILER_RT=TRUE',
         '-DLIBCXXABI_USE_LLVM_UNWINDER=TRUE',
+        '-DLIBCXX_USE_COMPILER_RT=TRUE',
+        '-DLIBUNWIND_USE_COMPILER_RT=TRUE',
     ]
 
 
@@ -56,14 +56,14 @@ def FeasibleToEnableThinLTO(cc, ld):
 
 def GetMinimalToolchainTargets():
     return [
-        'install-llvm-ar',
-        'install-llvm-ranlib',
-        'install-llvm-profdata',
-        'install-clang',
-        'install-lld',
-        'install-clang-resource-headers',
-        'install-runtimes',
-        'install-builtins',
+        'install-builtins-stripped',
+        'install-clang-resource-headers-stripped',
+        'install-clang-stripped',
+        'install-lld-stripped',
+        'install-llvm-ar-stripped',
+        'install-llvm-profdata-stripped',
+        'install-llvm-ranlib-stripped',
+        'install-runtimes-stripped',
     ]
 
 
@@ -72,14 +72,18 @@ def GetRuntimes():
 
 
 def GetRuntimeTargets():
-    return ['install-cxx', 'install-cxxabi', 'install-unwind']
+    return [
+        'install-cxx-stripped',
+        'install-cxxabi-stripped',
+        'install-unwind-stripped',
+    ]
 
 
 def GetClangToolsExtraTargets():
     return [
-        'install-clangd',
-        'install-clang-format',
-        'install-clang-tidy',
+        'install-clangd-stripped',
+        'install-clang-format-stripped',
+        'install-clang-tidy-stripped',
     ]
 
 
@@ -414,7 +418,7 @@ def Bootstrap(config, stage):
             ldflags=ldflags + GetLdPathFlags(cc, ld) + GetRuntimesLdFlags(),
             runtimes=['compiler-rt'],
             use_malloc='mimalloc',
-            ninja_targets=['install-builtins-standalone-atomic'],
+            ninja_targets=['install-builtins-standalone-atomic-stripped'],
             extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
         )
         rc = AB.ConfigAndBuild()
@@ -454,7 +458,16 @@ def Bootstrap(config, stage):
             if not IS_STAGING:
                 projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
                 ninja_targets.extend(GetClangToolsExtraTargets())
-                ninja_targets.extend(['install-bolt', 'install-lldb'])
+                ninja_targets.extend([
+                    'install-bolt-stripped',
+                    'install-lldb-stripped',
+                    'install-llvm-nm-stripped',
+                    'install-llvm-objdump-stripped',
+                    'install-llvm-readelf-stripped',
+                    'install-llvm-size-stripped',
+                    'install-llvm-strings-stripped',
+                    'install-llvm-strip-stripped',
+                ])
             else:
                 # FIXME: JITLink's tests in compiler-rt don't pass if built with libc++.
                 ninja_targets = ['check-llvm']
@@ -558,7 +571,7 @@ def BuildAtomicLib(config):
         ldflags=GetLdPathFlags(config.cc, config.ld) + GetRuntimesLdFlags(),
         runtimes=['compiler-rt'],
         use_malloc='mimalloc',
-        ninja_targets=['install-builtins-standalone-atomic'],
+        ninja_targets=['install-builtins-standalone-atomic-stripped'],
         extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
     )
     rc = AB.ConfigAndBuild()
