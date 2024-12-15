@@ -56,14 +56,14 @@ def FeasibleToEnableThinLTO(cc, ld):
 
 def GetMinimalToolchainTargets():
     return [
-        'install-builtins-stripped',
-        'install-clang-resource-headers-stripped',
-        'install-clang-stripped',
-        'install-lld-stripped',
-        'install-llvm-ar-stripped',
-        'install-llvm-profdata-stripped',
-        'install-llvm-ranlib-stripped',
-        'install-runtimes-stripped',
+        'install-builtins',
+        'install-clang-resource-headers',
+        'install-clang',
+        'install-lld',
+        'install-llvm-ar',
+        'install-llvm-profdata',
+        'install-llvm-ranlib',
+        'install-runtimes',
     ]
 
 
@@ -73,17 +73,17 @@ def GetRuntimes():
 
 def GetRuntimeTargets():
     return [
-        'install-cxx-stripped',
-        'install-cxxabi-stripped',
-        'install-unwind-stripped',
+        'install-cxx',
+        'install-cxxabi',
+        'install-unwind',
     ]
 
 
 def GetClangToolsExtraTargets():
     return [
-        'install-clangd-stripped',
-        'install-clang-format-stripped',
-        'install-clang-tidy-stripped',
+        'install-clangd',
+        'install-clang-format',
+        'install-clang-tidy',
     ]
 
 
@@ -418,7 +418,7 @@ def Bootstrap(config, stage):
             ldflags=ldflags + GetLdPathFlags(cc, ld) + GetRuntimesLdFlags(),
             runtimes=['compiler-rt'],
             use_malloc='mimalloc',
-            ninja_targets=['install-builtins-standalone-atomic-stripped'],
+            ninja_targets=['install-builtins-standalone-atomic'],
             extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
         )
         rc = AB.ConfigAndBuild()
@@ -459,14 +459,14 @@ def Bootstrap(config, stage):
                 projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
                 ninja_targets.extend(GetClangToolsExtraTargets())
                 ninja_targets.extend([
-                    'install-bolt-stripped',
-                    'install-lldb-stripped',
-                    'install-llvm-nm-stripped',
-                    'install-llvm-objdump-stripped',
-                    'install-llvm-readelf-stripped',
-                    'install-llvm-size-stripped',
-                    'install-llvm-strings-stripped',
-                    'install-llvm-strip-stripped',
+                    'install-bolt',
+                    'install-lldb',
+                    'install-llvm-nm',
+                    'install-llvm-objdump',
+                    'install-llvm-readelf',
+                    'install-llvm-size',
+                    'install-llvm-strings',
+                    'install-llvm-strip',
                 ])
             else:
                 # FIXME: JITLink's tests in compiler-rt don't pass if built with libc++.
@@ -571,7 +571,7 @@ def BuildAtomicLib(config):
         ldflags=GetLdPathFlags(config.cc, config.ld) + GetRuntimesLdFlags(),
         runtimes=['compiler-rt'],
         use_malloc='mimalloc',
-        ninja_targets=['install-builtins-standalone-atomic-stripped'],
+        ninja_targets=['install-builtins-standalone-atomic'],
         extra_cmake_flags=extra_cmake_flags + GetRuntimesCmakeFlags(),
     )
     rc = AB.ConfigAndBuild()
