@@ -1,2 +1,2 @@
 # toolkit
-Some useful scripts to assist my development.
+Some useful tools to assist my development.
