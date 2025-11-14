@@ -253,17 +253,22 @@ def main():
     config = parser.parse_args()
     if config.debug:
         logging.basicConfig(level=logging.DEBUG)
+    infile = config.obj[0]
+    content = None
     cmd = [
         config.objdump,
         '-d',
         '--no-show-raw-insn',
-        config.obj[0],
+        infile,
     ]
     cp = subprocess.run(cmd, capture_output=True)
     if cp.returncode != 0:
-        logging.error('Failed to run {}'.format(cmd))
-        return cp.returncode
-    context = ParseContext(io.StringIO(cp.stdout.decode('utf-8')))
+        logging.error('Failed to run {}, assuming text file'.format(cmd))
+        with open(infile, 'r') as f:
+            content = f.read()
+    else:
+        content = cp.stdout.decode('utf-8')
+    context = ParseContext(io.StringIO(content))
     context.Parse()
     if config.func not in context.functions:
         logging.error("Can't find {} in the object file".format(config.func))
