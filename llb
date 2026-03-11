@@ -103,7 +103,7 @@ def BuildForDev(config):
         build_dir=config.build_dir,
         cmake=config.cmake_binary,
         ninja=config.ninja_binary,
-        ccache=True,
+        ccache=config.ccache,
         cc=config.cc,
         cxx=InferCXX(config.cc),
         cflags=GetDefaultFlags(),
