@@ -15,7 +15,6 @@ import platform
 from copy import copy
 
 
-
 def GetRuntimesLdFlags():
     # libc++ uses libc++abi and libunwind being built.
     return ['-Wl,-rpath,$ORIGIN']
@@ -92,6 +91,7 @@ def InferCXX(cc):
     if cc.endswith('icx'):
         return cc[:-len('icx')] + 'icpx'
     raise Exception(f'Unrecognized compiler: {cc}')
+
 
 def IsProductionProfile(profile):
     PROFILES = ['clang1', 'clang2', 'clang3']
@@ -466,7 +466,8 @@ def Bootstrap(config, stage):
                     'install-llvm-size',
                     'install-llvm-strings',
                     'install-llvm-strip',
-                    'install-mlir',
+                    'install-mlir-opt',
+                    'install-mlir-translate',
                 ])
             else:
                 # FIXME: JITLink's tests in compiler-rt don't pass if built with libc++.
@@ -508,7 +509,7 @@ def Bootstrap(config, stage):
             use_malloc='mimalloc',
             # Currently, binaries are in build tree, not install tree, so RUNPATH may be
             # not pointing to the libdir.
-            env= {'LD_LIBRARY_PATH': libdir} if production else {}
+            env={} if not production else {'LD_LIBRARY_PATH': libdir},
             ninja_targets=ninja_targets,
             extra_cmake_flags=extra_cmake_flags,
         )
