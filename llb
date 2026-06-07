@@ -478,7 +478,7 @@ def Bootstrap(config, stage):
             ldflags.append(f'-Wl,-rpath,{libdir}')
         B = Builder(
             ccache=not production and i == 1,
-            enable_assert=production,
+            enable_assert=not production,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}'),
