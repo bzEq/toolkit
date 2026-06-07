@@ -12,4 +12,4 @@ LLB=$(realpath ${DIR}/llb)
 cd ${LLVM_BASE}/llvm-project
 git checkout main
 ${LBH} repo
-${LLB} -p staging --monorepo ${LLVM_BASE}/llvm-project --build_dir ${LLVM_BASE}/staging
+${LLB} -p bootstrap2 --monorepo ${LLVM_BASE}/llvm-project --build_dir ${LLVM_BASE}/staging

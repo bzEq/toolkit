@@ -14,9 +14,6 @@ import logging
 import platform
 from copy import copy
 
-# FIXME: Should not use global variable.
-PRINT_CMAKE_COMMAND = False
-IS_STAGING = False
 
 
 def GetRuntimesLdFlags():
@@ -51,7 +48,7 @@ def GetLdPathFlags(cc, ld):
 
 
 def FeasibleToEnableThinLTO(cc, ld):
-    return not IS_STAGING and cc.endswith('clang') and ld.endswith('lld')
+    return cc.endswith('clang') and ld.endswith('lld')
 
 
 def GetMinimalToolchainTargets():
@@ -95,6 +92,10 @@ def InferCXX(cc):
     if cc.endswith('icx'):
         return cc[:-len('icx')] + 'icpx'
     raise Exception(f'Unrecognized compiler: {cc}')
+
+def IsProductionProfile(profile):
+    PROFILES = ['clang1', 'clang2', 'clang3']
+    return profile in PROFILES
 
 
 def BuildForDev(config):
@@ -267,9 +268,6 @@ class Builder(object):
         cmake_command.extend(['-B', build_dir])
         env = os.environ.copy()
         env.update(self.env)
-        if PRINT_CMAKE_COMMAND:
-            print(shlex.join(cmake_command))
-            return 1
         err = subprocess.call(cmake_command, env=env)
         if err != 0:
             logging.error(f'cmake failed: {cmake_command}')
@@ -376,8 +374,9 @@ def Bootstrap(config, stage):
         return 1
     if stage > 3:
         stage = 3
+    production = IsProductionProfile(config.profile)
     BS = BuildSpace(config.build_dir)
-    if IS_STAGING:
+    if not production:
         BS.Clear()
     cc = shutil.which(config.cc)
     common_cflags = GetDefaultFlags()
@@ -400,12 +399,12 @@ def Bootstrap(config, stage):
             cc = os.path.join(install_prefix, 'bin/clang')
             cxx = os.path.join(install_prefix, 'bin/clang++')
             ld = os.path.join(install_prefix, 'bin/ld.lld')
-        if FeasibleToEnableThinLTO(cc, ld):
+        if production and FeasibleToEnableThinLTO(cc, ld):
             extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
         # Build libatomic firstly.
         AB = AtomicLibBuilder(
-            ccache=IS_STAGING and i == 1,
-            enable_assert=IS_STAGING,
+            ccache=not production and i == 1,
+            enable_assert=not production,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}-atomic'),
@@ -429,9 +428,9 @@ def Bootstrap(config, stage):
             return rc
         # Build runtimes using stage{i-1} driver.
         RB = RuntimeBuilder(
-            ccache=IS_STAGING and i == 1,
+            ccache=not production and i == 1,
             # To compare stage2 and stage3 binaries, assertion must be disabled.
-            enable_assert=IS_STAGING,
+            enable_assert=not production,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}-runtimes'),
@@ -455,7 +454,7 @@ def Bootstrap(config, stage):
         ninja_targets = GetMinimalToolchainTargets()
         # Build additional tools at the last stage.
         if i == stage:
-            if not IS_STAGING:
+            if production:
                 projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
                 ninja_targets.extend(GetClangToolsExtraTargets())
                 ninja_targets.extend([
@@ -474,11 +473,11 @@ def Bootstrap(config, stage):
                 ninja_targets = ['check-llvm']
         libdir = os.path.abspath(
             os.path.join(BS.GetInstall(f'stage{i}'), 'lib'))
-        if IS_STAGING:
+        if not production:
             ldflags.append(f'-Wl,-rpath,{libdir}')
         B = Builder(
-            ccache=IS_STAGING and i == 1,
-            enable_assert=IS_STAGING,
+            ccache=not production and i == 1,
+            enable_assert=production,
             jobs=config.jobs,
             monorepo=config.monorepo,
             build_dir=BS.GetBuild(f'stage{i}'),
@@ -509,7 +508,7 @@ def Bootstrap(config, stage):
             use_malloc='mimalloc',
             # Currently, binaries are in build tree, not install tree, so RUNPATH may be
             # not pointing to the libdir.
-            env={} if IS_STAGING else {'LD_LIBRARY_PATH': libdir},
+            env= {'LD_LIBRARY_PATH': libdir} if production else {}
             ninja_targets=ninja_targets,
             extra_cmake_flags=extra_cmake_flags,
         )
@@ -533,7 +532,8 @@ def Bootstrap3(config):
 
 def BuildRuntimes(config):
     extra_cmake_flags = []
-    if FeasibleToEnableThinLTO(config.cc, config.ld):
+    production = IsProductionProfile(config.profile)
+    if production and FeasibleToEnableThinLTO(config.cc, config.ld):
         extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
     return RuntimeBuilder(
         enable_assert=False,
@@ -584,8 +584,9 @@ def BuildAtomicLib(config):
 Profiles = {
     'dev': BuildForDev,
     'debug': BuildForDebug,
-    'staging': Bootstrap2,
-    'strict_staging': Bootstrap3,
+    'bootstrap1': Bootstrap1,
+    'bootstrap2': Bootstrap2,
+    'bootstrap3': Bootstrap3,
     'gcc': BuildWithGCC,
     'clang1': Bootstrap1,
     'clang2': Bootstrap2,
@@ -607,18 +608,9 @@ def main():
     parser.add_argument('--monorepo', required=True)
     parser.add_argument('--build_dir', required=True)
     parser.add_argument('--install_prefix')
-    parser.add_argument('--print_cmake_command',
-                        action='store_true',
-                        default=False)
     parser.add_argument('--werror', default=False, action='store_true')
     parser.add_argument('-p', dest='profile', type=str, default='dev')
     config = parser.parse_args()
-    if config.print_cmake_command:
-        global PRINT_CMAKE_COMMAND
-        PRINT_CMAKE_COMMAND = True
-    if config.profile == 'staging' or config.profile == 'strict_staging':
-        global IS_STAGING
-        IS_STAGING = True
     if config.profile in Profiles:
         return Profiles[config.profile](config)
     logging.error(f"No builder for {config.profile}")
