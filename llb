@@ -111,7 +111,7 @@ def BuildForDev(config):
         ld=config.ld,
         ldflags=GetLdPathFlags(config.cc, config.ld),
         use_malloc='mimalloc',
-        projects=['clang', 'lld'],
+        projects=['clang', 'lld', 'mlir'],
         runtimes=['compiler-rt'],
         config_only=True,
     ).ConfigAndBuild()
@@ -450,7 +450,7 @@ def Bootstrap(config, stage):
         rc = RB.ConfigAndBuild()
         if rc != 0:
             return rc
-        projects = ['clang', 'lld']
+        projects = ['clang', 'lld', 'mlir']
         runtimes = ['compiler-rt']
         ninja_targets = GetMinimalToolchainTargets()
         # Build additional tools at the last stage.
@@ -467,6 +467,7 @@ def Bootstrap(config, stage):
                     'install-llvm-size',
                     'install-llvm-strings',
                     'install-llvm-strip',
+                    'install-mlir',
                 ])
             else:
                 # FIXME: JITLink's tests in compiler-rt don't pass if built with libc++.
