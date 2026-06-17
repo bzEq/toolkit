@@ -115,6 +115,7 @@ def BuildForDev(config):
         projects=['clang', 'lld', 'mlir'],
         runtimes=['compiler-rt'],
         config_only=True,
+        jobs=config.jobs,
     ).ConfigAndBuild()
 
 
@@ -131,9 +132,10 @@ def BuildForDebug(config):
         cxxflags=['-pipe'],
         ld=config.ld,
         ldflags=GetLdPathFlags(config.cc, config.ld),
-        projects=['clang;lld'],
+        projects=['clang', 'lld'],
         runtimes=['compiler-rt'],
         config_only=True,
+        jobs=config.jobs,
     ).ConfigAndBuild()
 
 
@@ -400,7 +402,10 @@ def Bootstrap(config, stage):
             cxx = os.path.join(install_prefix, 'bin/clang++')
             ld = os.path.join(install_prefix, 'bin/ld.lld')
         if production and FeasibleToEnableThinLTO(cc, ld):
-            extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
+            # If we're building a multi-stage compiler, don't enable
+            # LTO when using stage0 compiler for saving time.
+            if stage == 1 or i > 1:
+                extra_cmake_flags.append('-DLLVM_ENABLE_LTO=Thin')
         # Build libatomic firstly.
         AB = AtomicLibBuilder(
             ccache=not production and i == 1,
@@ -455,11 +460,12 @@ def Bootstrap(config, stage):
         # Build additional tools at the last stage.
         if i == stage:
             if production:
-                projects.extend(['clang-tools-extra', 'polly', 'bolt', 'lldb'])
+                # FIXME: Removed polly, bolt, lldb from the list,
+                # since unable to compare binaries between stage2 and
+                # stage3 with them in the list.
+                projects.extend(['clang-tools-extra'])
                 ninja_targets.extend(GetClangToolsExtraTargets())
                 ninja_targets.extend([
-                    'install-bolt',
-                    'install-lldb',
                     'install-llvm-nm',
                     'install-llvm-objdump',
                     'install-llvm-readelf',
