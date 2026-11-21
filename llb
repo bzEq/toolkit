@@ -55,7 +55,6 @@ def GetMinimalToolchainTargets():
         'install-builtins',
         'install-clang-resource-headers',
         'install-clang',
-        'install-clang-scan-deps',
         'install-lld',
         'install-llvm-ar',
         'install-llvm-profdata',
@@ -95,7 +94,7 @@ def InferCXX(cc):
 
 
 def IsProductionProfile(profile):
-    PROFILES = ['bootstrap1', 'bootstrap2', 'bootstrap3']
+    PROFILES = ['clang1', 'clang2', 'clang3']
     return profile in PROFILES
 
 
@@ -596,6 +595,9 @@ Profiles = {
     'bootstrap2': Bootstrap2,
     'bootstrap3': Bootstrap3,
     'gcc': BuildWithGCC,
+    'clang1': Bootstrap1,
+    'clang2': Bootstrap2,
+    'clang3': Bootstrap3,
     'runtimes': BuildRuntimes,
     'atomic': BuildAtomicLib,
 }
