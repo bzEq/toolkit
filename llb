@@ -55,6 +55,7 @@ def GetMinimalToolchainTargets():
         'install-builtins',
         'install-clang-resource-headers',
         'install-clang',
+        'install-clang-scan-deps',
         'install-lld',
         'install-llvm-ar',
         'install-llvm-profdata',
